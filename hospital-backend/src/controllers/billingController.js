@@ -1,6 +1,5 @@
 const prisma = require('../utils/prisma');
 
-// Create Bill
 const createBill = async (req, res) => {
   try {
     const { patientId, amount, description } = req.body;
@@ -33,7 +32,6 @@ const createBill = async (req, res) => {
   }
 };
 
-// Get All Bills
 const getAllBills = async (req, res) => {
   try {
     const bills = await prisma.bill.findMany({
@@ -53,7 +51,6 @@ const getAllBills = async (req, res) => {
   }
 };
 
-// Get Bills by Patient
 const getBillsByPatient = async (req, res) => {
   try {
     const { patientId } = req.params;
@@ -73,7 +70,6 @@ const getBillsByPatient = async (req, res) => {
   }
 };
 
-// Get Single Bill
 const getBillById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -97,7 +93,6 @@ const getBillById = async (req, res) => {
   }
 };
 
-// Record Payment
 const recordPayment = async (req, res) => {
   try {
     const { billId } = req.params;
@@ -107,7 +102,6 @@ const recordPayment = async (req, res) => {
       return res.status(400).json({ message: 'amount is required' });
     }
 
-    // Create payment
     const payment = await prisma.payment.create({
       data: {
         billId,
@@ -116,16 +110,13 @@ const recordPayment = async (req, res) => {
       },
     });
 
-    // Get the bill with all payments
     const bill = await prisma.bill.findUnique({
       where: { id: billId },
       include: { payments: true },
     });
 
-    // Calculate total paid
     const totalPaid = bill.payments.reduce((sum, p) => sum + p.amount, 0);
 
-    // Update bill status
     let newStatus = 'UNPAID';
     if (totalPaid >= bill.amount) {
       newStatus = 'PAID';
@@ -155,12 +146,10 @@ const recordPayment = async (req, res) => {
   }
 };
 
-// Delete Bill
 const deleteBill = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // First delete related payments
     await prisma.payment.deleteMany({
       where: { billId: id },
     });

@@ -1,7 +1,6 @@
 const prisma = require('../utils/prisma');
 const bcrypt = require('bcryptjs');
 
-// Create Staff (creates User + Staff profile)
 const createStaff = async (req, res) => {
   try {
     const {
@@ -17,7 +16,6 @@ const createStaff = async (req, res) => {
       address,
     } = req.body;
 
-    // Check if email already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -71,7 +69,6 @@ const createStaff = async (req, res) => {
   }
 };
 
-// Get All Staff
 const getAllStaff = async (req, res) => {
   try {
     const staffList = await prisma.staff.findMany({
@@ -95,7 +92,6 @@ const getAllStaff = async (req, res) => {
   }
 };
 
-// Get Single Staff
 const getStaffById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -125,7 +121,6 @@ const getStaffById = async (req, res) => {
   }
 };
 
-// Update Staff
 const updateStaff = async (req, res) => {
   try {
     const { id } = req.params;
@@ -168,7 +163,6 @@ const updateStaff = async (req, res) => {
   }
 };
 
-// Deactivate / Delete Staff
 const deleteStaff = async (req, res) => {
   try {
     const { id } = req.params;
@@ -181,7 +175,6 @@ const deleteStaff = async (req, res) => {
       return res.status(404).json({ message: 'Staff not found' });
     }
 
-    // Delete the user (cascades to staff)
     await prisma.user.delete({
       where: { id: staff.userId },
     });

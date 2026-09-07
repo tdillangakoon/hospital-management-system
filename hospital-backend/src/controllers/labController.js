@@ -1,8 +1,5 @@
 const prisma = require('../utils/prisma');
 
-// ========== Lab Tests (Catalog) ==========
-
-// Create Lab Test
 const createLabTest = async (req, res) => {
   try {
     const { name, description, price, category } = req.body;
@@ -23,7 +20,6 @@ const createLabTest = async (req, res) => {
   }
 };
 
-// Get All Lab Tests
 const getAllLabTests = async (req, res) => {
   try {
     const tests = await prisma.labTest.findMany({
@@ -36,7 +32,6 @@ const getAllLabTests = async (req, res) => {
   }
 };
 
-// Update Lab Test
 const updateLabTest = async (req, res) => {
   try {
     const { id } = req.params;
@@ -59,7 +54,6 @@ const updateLabTest = async (req, res) => {
   }
 };
 
-// Delete Lab Test
 const deleteLabTest = async (req, res) => {
   try {
     const { id } = req.params;
@@ -71,9 +65,6 @@ const deleteLabTest = async (req, res) => {
   }
 };
 
-// ========== Lab Requests ==========
-
-// Create Lab Request
 const createLabRequest = async (req, res) => {
   try {
     const { patientId, doctorId, testId, notes } = req.body;
@@ -106,7 +97,6 @@ const createLabRequest = async (req, res) => {
   }
 };
 
-// Get All Lab Requests
 const getAllLabRequests = async (req, res) => {
   try {
     const requests = await prisma.labRequest.findMany({
@@ -128,7 +118,6 @@ const getAllLabRequests = async (req, res) => {
   }
 };
 
-// Update Lab Request Status
 const updateLabRequestStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -150,9 +139,6 @@ const updateLabRequestStatus = async (req, res) => {
   }
 };
 
-// ========== Lab Results ==========
-
-// Add Lab Result
 const addLabResult = async (req, res) => {
   try {
     const { labRequestId, result, remarks } = req.body;
@@ -161,7 +147,6 @@ const addLabResult = async (req, res) => {
       return res.status(400).json({ message: 'labRequestId and result are required' });
     }
 
-    // Create result
     const labResult = await prisma.labResult.create({
       data: {
         labRequestId,
@@ -170,7 +155,6 @@ const addLabResult = async (req, res) => {
       },
     });
 
-    // Update request status to COMPLETED
     await prisma.labRequest.update({
       where: { id: labRequestId },
       data: { status: 'COMPLETED' },
@@ -186,7 +170,6 @@ const addLabResult = async (req, res) => {
   }
 };
 
-// Get Lab Result by Request ID
 const getLabResult = async (req, res) => {
   try {
     const { labRequestId } = req.params;

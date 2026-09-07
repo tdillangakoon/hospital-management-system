@@ -12,14 +12,13 @@ const auth = (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    req.user = decoded; // { id, role }
+    req.user = decoded; //{ id, role }
     next();
   } catch (error) {
     return res.status(401).json({ message: 'Invalid or expired token' });
   }
 };
 
-// Optional: Role checker
 const authorize = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {

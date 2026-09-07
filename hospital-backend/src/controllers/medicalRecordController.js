@@ -1,6 +1,5 @@
 const prisma = require('../utils/prisma');
 
-// Create Medical Record
 const createMedicalRecord = async (req, res) => {
   try {
     const { patientId, appointmentId, diagnosis, prescription, notes } = req.body;
@@ -37,7 +36,6 @@ const createMedicalRecord = async (req, res) => {
   }
 };
 
-// Get All Medical Records
 const getAllMedicalRecords = async (req, res) => {
   try {
     const records = await prisma.medicalRecord.findMany({
@@ -59,7 +57,6 @@ const getAllMedicalRecords = async (req, res) => {
   }
 };
 
-// Get Medical Records by Patient
 const getRecordsByPatient = async (req, res) => {
   try {
     const { patientId } = req.params;
@@ -81,7 +78,6 @@ const getRecordsByPatient = async (req, res) => {
   }
 };
 
-// Get Single Medical Record
 const getMedicalRecordById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -105,7 +101,6 @@ const getMedicalRecordById = async (req, res) => {
   }
 };
 
-// Update Medical Record
 const updateMedicalRecord = async (req, res) => {
   try {
     const { id } = req.params;
@@ -130,7 +125,6 @@ const updateMedicalRecord = async (req, res) => {
   }
 };
 
-// Delete Medical Record
 const deleteMedicalRecord = async (req, res) => {
   try {
     const { id } = req.params;

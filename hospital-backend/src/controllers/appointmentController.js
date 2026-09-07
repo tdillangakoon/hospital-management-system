@@ -1,11 +1,9 @@
 const prisma = require('../utils/prisma');
 
-// Create Appointment
 const createAppointment = async (req, res) => {
   try {
     const { patientId, doctorId, date, time, reason, notes } = req.body;
 
-    // Simple validation
     if (!patientId || !doctorId || !date || !time) {
       return res.status(400).json({ message: 'patientId, doctorId, date and time are required' });
     }
@@ -44,7 +42,6 @@ const createAppointment = async (req, res) => {
   }
 };
 
-// Get All Appointments
 const getAllAppointments = async (req, res) => {
   try {
     const appointments = await prisma.appointment.findMany({
@@ -70,7 +67,6 @@ const getAllAppointments = async (req, res) => {
   }
 };
 
-// Get Single Appointment
 const getAppointmentById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -101,7 +97,6 @@ const getAppointmentById = async (req, res) => {
   }
 };
 
-// Update Appointment (mainly status)
 const updateAppointment = async (req, res) => {
   try {
     const { id } = req.params;
@@ -138,7 +133,6 @@ const updateAppointment = async (req, res) => {
   }
 };
 
-// Delete / Cancel Appointment
 const deleteAppointment = async (req, res) => {
   try {
     const { id } = req.params;

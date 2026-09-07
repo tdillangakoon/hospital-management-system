@@ -1,6 +1,5 @@
 const prisma = require('../utils/prisma');
 
-// Create Patient
 const createPatient = async (req, res) => {
   try {
     const { name, email, phone, gender, dateOfBirth, address, bloodGroup } = req.body;
@@ -27,7 +26,6 @@ const createPatient = async (req, res) => {
   }
 };
 
-// Get All Patients
 const getAllPatients = async (req, res) => {
   try {
     const patients = await prisma.patient.findMany({
@@ -41,7 +39,6 @@ const getAllPatients = async (req, res) => {
   }
 };
 
-// Get Single Patient
 const getPatientById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -66,7 +63,6 @@ const getPatientById = async (req, res) => {
   }
 };
 
-// Update Patient
 const updatePatient = async (req, res) => {
   try {
     const { id } = req.params;
@@ -95,7 +91,6 @@ const updatePatient = async (req, res) => {
   }
 };
 
-// Delete Patient
 const deletePatient = async (req, res) => {
   try {
     const { id } = req.params;

@@ -1,6 +1,5 @@
 const prisma = require('../utils/prisma');
 
-// Main Dashboard Summary
 const getDashboardStats = async (req, res) => {
   try {
     const today = new Date();
@@ -9,7 +8,6 @@ const getDashboardStats = async (req, res) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Parallel queries for better performance
     const [
       totalPatients,
       totalDoctors,
@@ -90,7 +88,6 @@ const getDashboardStats = async (req, res) => {
   }
 };
 
-// Appointments Report
 const getAppointmentsReport = async (req, res) => {
   try {
     const { startDate, endDate, status } = req.query;
@@ -131,7 +128,6 @@ const getAppointmentsReport = async (req, res) => {
   }
 };
 
-// Revenue Report
 const getRevenueReport = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
@@ -170,7 +166,6 @@ const getRevenueReport = async (req, res) => {
   }
 };
 
-// Patients Report
 const getPatientsReport = async (req, res) => {
   try {
     const patients = await prisma.patient.findMany({
@@ -196,7 +191,6 @@ const getPatientsReport = async (req, res) => {
   }
 };
 
-// Lab Report
 const getLabReport = async (req, res) => {
   try {
     const requests = await prisma.labRequest.findMany({

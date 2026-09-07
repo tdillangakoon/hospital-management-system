@@ -1,12 +1,10 @@
 const prisma = require('../utils/prisma');
 const bcrypt = require('bcryptjs');
 
-// Create Doctor (also creates a User account)
 const createDoctor = async (req, res) => {
   try {
     const { name, email, password, specialization, phone, department } = req.body;
 
-    // Check if email already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -15,10 +13,8 @@ const createDoctor = async (req, res) => {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password || '123456', 10);
 
-    // Create User + Doctor together
     const user = await prisma.user.create({
       data: {
         name,
@@ -56,7 +52,6 @@ const createDoctor = async (req, res) => {
   }
 };
 
-// Get All Doctors
 const getAllDoctors = async (req, res) => {
   try {
     const doctors = await prisma.doctor.findMany({
@@ -79,7 +74,6 @@ const getAllDoctors = async (req, res) => {
   }
 };
 
-// Get Single Doctor
 const getDoctorById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -109,7 +103,6 @@ const getDoctorById = async (req, res) => {
   }
 };
 
-// Update Doctor
 const updateDoctor = async (req, res) => {
   try {
     const { id } = req.params;
@@ -148,12 +141,10 @@ const updateDoctor = async (req, res) => {
   }
 };
 
-// Delete Doctor
 const deleteDoctor = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // First find the doctor to get userId
     const doctor = await prisma.doctor.findUnique({
       where: { id },
     });
@@ -162,7 +153,6 @@ const deleteDoctor = async (req, res) => {
       return res.status(404).json({ message: 'Doctor not found' });
     }
 
-    // Delete the user (this will also delete the doctor because of onDelete: Cascade)
     await prisma.user.delete({
       where: { id: doctor.userId },
     });

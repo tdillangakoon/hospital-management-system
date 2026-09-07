@@ -113,7 +113,7 @@ model LabTest {
   name        String
   description String?
   price       Float
-  category    String?  // e.g. Blood, Urine, Imaging
+  category    String?  //Blood, Urine, Imaging
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -153,8 +153,8 @@ model Medicine {
   id            String   @id @default(uuid())
   name          String
   genericName   String?
-  category      String?  // e.g. Antibiotic, Painkiller
-  unit          String   // e.g. Tablet, Bottle, Syrup
+  category      String?  //Antibiotic, Painkiller
+  unit          String   //Tablet, Bottle, Syrup
   price         Float
   stockQuantity Int      @default(0)
   expiryDate    DateTime?
@@ -171,7 +171,7 @@ model Dispense {
   patientId   String
   quantity    Int
   totalPrice  Float
-  prescribedBy String? // doctor name or id
+  prescribedBy String? //doctor name or id
   notes       String?
   dispensedAt DateTime @default(now())
   createdAt   DateTime @default(now())
@@ -183,7 +183,7 @@ model Dispense {
 
 model Ward {
   id          String   @id @default(uuid())
-  name        String   // e.g. General Ward, ICU, Pediatric
+  name        String   //General Ward, ICU, Pediatric
   description String?
   totalBeds   Int      @default(0)
   createdAt   DateTime @default(now())
@@ -208,7 +208,7 @@ model Admission {
   id              String          @id @default(uuid())
   patientId       String
   bedId           String
-  admittedBy      String?         // user/doctor id or name
+  admittedBy      String?         //user/doctor id or name
   admissionDate   DateTime        @default(now())
   dischargeDate   DateTime?
   status          AdmissionStatus @default(ADMITTED)
@@ -224,10 +224,10 @@ model Admission {
 model Staff {
   id            String   @id @default(uuid())
   userId        String   @unique
-  employeeId    String?  @unique   // e.g. EMP001
+  employeeId    String?  @unique   
   phone         String?
   department    String?
-  designation   String?  // e.g. Nurse, Lab Technician, Accountant
+  designation   String?  //Nurse, Lab Technician, Accountant
   joiningDate   DateTime?
   address       String?
   isActive      Boolean  @default(true)

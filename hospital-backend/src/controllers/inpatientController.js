@@ -1,7 +1,5 @@
 const prisma = require('../utils/prisma');
 
-// ========== Wards ==========
-
 const createWard = async (req, res) => {
   try {
     const { name, description, totalBeds } = req.body;
@@ -35,8 +33,6 @@ const getAllWards = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-
-// ========== Beds ==========
 
 const createBed = async (req, res) => {
   try {
@@ -90,8 +86,6 @@ const getAvailableBeds = async (req, res) => {
   }
 };
 
-// ========== Admissions ==========
-
 const admitPatient = async (req, res) => {
   try {
     const { patientId, bedId, admittedBy, reason, notes } = req.body;
@@ -100,7 +94,6 @@ const admitPatient = async (req, res) => {
       return res.status(400).json({ message: 'patientId and bedId are required' });
     }
 
-    // Check if bed is available
     const bed = await prisma.bed.findUnique({ where: { id: bedId } });
 
     if (!bed) {
@@ -111,7 +104,6 @@ const admitPatient = async (req, res) => {
       return res.status(400).json({ message: 'Bed is not available' });
     }
 
-    // Create admission + mark bed as OCCUPIED
     const [admission] = await prisma.$transaction([
       prisma.admission.create({
         data: {
@@ -180,7 +172,6 @@ const dischargePatient = async (req, res) => {
       return res.status(400).json({ message: 'Patient already discharged' });
     }
 
-    // Discharge + free the bed
     const [updatedAdmission] = await prisma.$transaction([
       prisma.admission.update({
         where: { id },

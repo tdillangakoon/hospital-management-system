@@ -9,7 +9,6 @@ const {
 } = require('../controllers/patientController');
 const { auth } = require('../middleware/auth');
 
-// All patient routes require login
 router.use(auth);
 
 router.post('/', createPatient);

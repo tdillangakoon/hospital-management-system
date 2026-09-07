@@ -1,8 +1,5 @@
 const prisma = require('../utils/prisma');
 
-// ========== Medicine (Inventory) ==========
-
-// Add new Medicine
 const createMedicine = async (req, res) => {
   try {
     const { name, genericName, category, unit, price, stockQuantity, expiryDate, manufacturer } = req.body;
@@ -27,7 +24,6 @@ const createMedicine = async (req, res) => {
   }
 };
 
-// Get All Medicines
 const getAllMedicines = async (req, res) => {
   try {
     const medicines = await prisma.medicine.findMany({
@@ -40,7 +36,6 @@ const getAllMedicines = async (req, res) => {
   }
 };
 
-// Get Single Medicine
 const getMedicineById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -57,7 +52,6 @@ const getMedicineById = async (req, res) => {
   }
 };
 
-// Update Medicine
 const updateMedicine = async (req, res) => {
   try {
     const { id } = req.params;
@@ -84,7 +78,6 @@ const updateMedicine = async (req, res) => {
   }
 };
 
-// Delete Medicine
 const deleteMedicine = async (req, res) => {
   try {
     const { id } = req.params;
@@ -96,8 +89,6 @@ const deleteMedicine = async (req, res) => {
   }
 };
 
-// ========== Dispense Medicine ==========
-
 const dispenseMedicine = async (req, res) => {
   try {
     const { medicineId, patientId, quantity, prescribedBy, notes } = req.body;
@@ -106,7 +97,6 @@ const dispenseMedicine = async (req, res) => {
       return res.status(400).json({ message: 'medicineId, patientId and quantity are required' });
     }
 
-    // Get medicine
     const medicine = await prisma.medicine.findUnique({ where: { id: medicineId } });
 
     if (!medicine) {
@@ -119,7 +109,6 @@ const dispenseMedicine = async (req, res) => {
 
     const totalPrice = medicine.price * quantity;
 
-    // Create dispense record + reduce stock
     const [dispense] = await prisma.$transaction([
       prisma.dispense.create({
         data: {
@@ -153,7 +142,6 @@ const dispenseMedicine = async (req, res) => {
   }
 };
 
-// Get All Dispenses
 const getAllDispenses = async (req, res) => {
   try {
     const dispenses = await prisma.dispense.findMany({
@@ -171,7 +159,6 @@ const getAllDispenses = async (req, res) => {
   }
 };
 
-// Get Dispenses by Patient
 const getDispensesByPatient = async (req, res) => {
   try {
     const { patientId } = req.params;
