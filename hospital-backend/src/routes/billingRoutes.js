@@ -5,6 +5,7 @@ const {
   getAllBills,
   getBillsByPatient,
   getBillById,
+  updateBill,
   recordPayment,
   deleteBill,
 } = require('../controllers/billingController');
@@ -16,6 +17,7 @@ router.post('/', createBill);
 router.get('/', getAllBills);
 router.get('/patient/:patientId', getBillsByPatient);
 router.get('/:id', getBillById);
+router.put('/:id', updateBill);
 router.post('/:billId/payments', recordPayment);
 router.delete('/:id', deleteBill);
 

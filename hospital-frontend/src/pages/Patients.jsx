@@ -6,6 +6,8 @@ function Patients() {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [deleteId, setDeleteId] = useState(null); // for confirmation popup
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -17,6 +19,8 @@ function Patients() {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
   const fetchPatients = async () => {
     try {
@@ -33,8 +37,50 @@ function Patients() {
     fetchPatients();
   }, []);
 
+  const resetForm = () => {
+    setForm({
+      name: '',
+      email: '',
+      phone: '',
+      gender: '',
+      dateOfBirth: '',
+      address: '',
+      bloodGroup: '',
+    });
+    setEditingId(null);
+    setShowForm(false);
+  };
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleEdit = (patient) => {
+    setForm({
+      name: patient.name || '',
+      email: patient.email || '',
+      phone: patient.phone || '',
+      gender: patient.gender || '',
+      dateOfBirth: patient.dateOfBirth ? patient.dateOfBirth.split('T')[0] : '',
+      address: patient.address || '',
+      bloodGroup: patient.bloodGroup || '',
+    });
+    setEditingId(patient.id);
+    setShowForm(true);
+    setError('');
+    setSuccess('');
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await api.delete(`/patients/${deleteId}`);
+      setSuccess('Patient deleted successfully');
+      setDeleteId(null);
+      fetchPatients();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete patient');
+      setDeleteId(null);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -43,21 +89,17 @@ function Patients() {
     setSuccess('');
 
     try {
-      await api.post('/patients', form);
-      setSuccess('Patient added successfully');
-      setForm({
-        name: '',
-        email: '',
-        phone: '',
-        gender: '',
-        dateOfBirth: '',
-        address: '',
-        bloodGroup: '',
-      });
-      setShowForm(false);
+      if (editingId) {
+        await api.put(`/patients/${editingId}`, form);
+        setSuccess('Patient updated successfully');
+      } else {
+        await api.post('/patients', form);
+        setSuccess('Patient added successfully');
+      }
+      resetForm();
       fetchPatients();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to add patient');
+      setError(err.response?.data?.message || 'Failed to save patient');
     }
   };
 
@@ -65,7 +107,16 @@ function Patients() {
     <Layout>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <h1 style={{ margin: 0 }}>Patients</h1>
-        <button onClick={() => setShowForm(!showForm)} style={styles.primaryBtn}>
+        <button
+          onClick={() => {
+            if (showForm) resetForm();
+            else {
+              setShowForm(true);
+              setEditingId(null);
+            }
+          }}
+          style={styles.primaryBtn}
+        >
           {showForm ? 'Cancel' : '+ Add Patient'}
         </button>
       </div>
@@ -75,22 +126,33 @@ function Patients() {
 
       {showForm && (
         <form onSubmit={handleSubmit} style={styles.form}>
-          <h3 style={{ marginTop: 0 }}>Add New Patient</h3>
+          <h3 style={{ marginTop: 0 }}>{editingId ? 'Edit Patient' : 'Add New Patient'}</h3>
           <div style={styles.formGrid}>
             <input name="name" placeholder="Full Name *" value={form.name} onChange={handleChange} required style={styles.input} />
             <input name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} style={styles.input} />
             <input name="phone" placeholder="Phone *" value={form.phone} onChange={handleChange} required style={styles.input} />
+
             <select name="gender" value={form.gender} onChange={handleChange} style={styles.input}>
               <option value="">Select Gender</option>
               <option value="Male">Male</option>
               <option value="Female">Female</option>
               <option value="Other">Other</option>
             </select>
+
             <input name="dateOfBirth" type="date" value={form.dateOfBirth} onChange={handleChange} style={styles.input} />
-            <input name="bloodGroup" placeholder="Blood Group (e.g. O+)" value={form.bloodGroup} onChange={handleChange} style={styles.input} />
+
+            <select name="bloodGroup" value={form.bloodGroup} onChange={handleChange} style={styles.input}>
+              <option value="">Select Blood Group</option>
+              {bloodGroups.map((bg) => (
+                <option key={bg} value={bg}>{bg}</option>
+              ))}
+            </select>
+
             <input name="address" placeholder="Address" value={form.address} onChange={handleChange} style={{ ...styles.input, gridColumn: '1 / -1' }} />
           </div>
-          <button type="submit" style={styles.primaryBtn}>Save Patient</button>
+          <button type="submit" style={styles.primaryBtn}>
+            {editingId ? 'Update Patient' : 'Save Patient'}
+          </button>
         </form>
       )}
 
@@ -107,12 +169,13 @@ function Patients() {
                 <th style={styles.th}>Gender</th>
                 <th style={styles.th}>Blood Group</th>
                 <th style={styles.th}>Address</th>
+                <th style={styles.th}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {patients.length === 0 ? (
                 <tr>
-                  <td colSpan="6" style={{ padding: 20, textAlign: 'center' }}>No patients found</td>
+                  <td colSpan="7" style={{ padding: 20, textAlign: 'center' }}>No patients found</td>
                 </tr>
               ) : (
                 patients.map((p) => (
@@ -123,11 +186,35 @@ function Patients() {
                     <td style={styles.td}>{p.gender || '-'}</td>
                     <td style={styles.td}>{p.bloodGroup || '-'}</td>
                     <td style={styles.td}>{p.address || '-'}</td>
+                    <td style={styles.td}>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={() => handleEdit(p)} style={styles.editBtn}>Edit</button>
+                        <button onClick={() => setDeleteId(p.id)} style={styles.deleteBtn}>Delete</button>
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Delete Confirmation Popup */}
+      {deleteId && (
+        <div style={styles.overlay}>
+          <div style={styles.modal}>
+            <h3 style={{ marginTop: 0 }}>Confirm Delete</h3>
+            <p>Are you sure you want to delete this patient? This action cannot be undone.</p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+              <button onClick={() => setDeleteId(null)} style={styles.cancelBtn}>
+                Cancel
+              </button>
+              <button onClick={confirmDelete} style={styles.deleteBtn}>
+                Yes, Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </Layout>
@@ -140,6 +227,33 @@ const styles = {
     color: 'white',
     border: 'none',
     padding: '10px 16px',
+    borderRadius: 6,
+    cursor: 'pointer',
+    fontSize: 14,
+  },
+  editBtn: {
+    background: '#3b82f6',
+    color: 'white',
+    border: 'none',
+    padding: '5px 10px',
+    borderRadius: 4,
+    cursor: 'pointer',
+    fontSize: 12,
+  },
+  deleteBtn: {
+    background: '#ef4444',
+    color: 'white',
+    border: 'none',
+    padding: '5px 10px',
+    borderRadius: 4,
+    cursor: 'pointer',
+    fontSize: 12,
+  },
+  cancelBtn: {
+    background: '#94a3b8',
+    color: 'white',
+    border: 'none',
+    padding: '8px 16px',
     borderRadius: 6,
     cursor: 'pointer',
     fontSize: 14,
@@ -199,6 +313,26 @@ const styles = {
     padding: 12,
     borderRadius: 6,
     marginBottom: 16,
+  },
+  overlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0,0,0,0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modal: {
+    background: 'white',
+    padding: 24,
+    borderRadius: 10,
+    width: '100%',
+    maxWidth: 400,
+    boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
   },
 };
 

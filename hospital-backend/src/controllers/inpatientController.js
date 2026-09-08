@@ -22,9 +22,7 @@ const createWard = async (req, res) => {
 const getAllWards = async (req, res) => {
   try {
     const wards = await prisma.ward.findMany({
-      include: {
-        beds: true,
-      },
+      include: { beds: true },
       orderBy: { name: 'asc' },
     });
     res.json(wards);
@@ -44,9 +42,7 @@ const createBed = async (req, res) => {
         bedNumber,
         status: 'AVAILABLE',
       },
-      include: {
-        ward: true,
-      },
+      include: { ward: true },
     });
 
     res.status(201).json({ message: 'Bed created successfully', bed });
@@ -59,9 +55,7 @@ const createBed = async (req, res) => {
 const getAllBeds = async (req, res) => {
   try {
     const beds = await prisma.bed.findMany({
-      include: {
-        ward: true,
-      },
+      include: { ward: true },
       orderBy: { bedNumber: 'asc' },
     });
     res.json(beds);
@@ -75,9 +69,7 @@ const getAvailableBeds = async (req, res) => {
   try {
     const beds = await prisma.bed.findMany({
       where: { status: 'AVAILABLE' },
-      include: {
-        ward: true,
-      },
+      include: { ward: true },
     });
     res.json(beds);
   } catch (error) {
@@ -116,9 +108,7 @@ const admitPatient = async (req, res) => {
         },
         include: {
           patient: { select: { id: true, name: true, phone: true } },
-          bed: {
-            include: { ward: true },
-          },
+          bed: { include: { ward: true } },
         },
       }),
       prisma.bed.update({
@@ -142,9 +132,7 @@ const getAllAdmissions = async (req, res) => {
     const admissions = await prisma.admission.findMany({
       include: {
         patient: { select: { id: true, name: true, phone: true } },
-        bed: {
-          include: { ward: true },
-        },
+        bed: { include: { ward: true } },
       },
       orderBy: { admissionDate: 'desc' },
     });
@@ -200,6 +188,52 @@ const dischargePatient = async (req, res) => {
   }
 };
 
+const updateAdmission = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { admittedBy, reason, notes } = req.body;
+
+    const admission = await prisma.admission.update({
+      where: { id },
+      data: { admittedBy, reason, notes },
+      include: {
+        patient: { select: { id: true, name: true, phone: true } },
+        bed: { include: { ward: true } },
+      },
+    });
+
+    res.json({ message: 'Admission updated successfully', admission });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+const deleteAdmission = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const admission = await prisma.admission.findUnique({ where: { id } });
+
+    if (!admission) {
+      return res.status(404).json({ message: 'Admission not found' });
+    }
+
+    await prisma.$transaction([
+      prisma.admission.delete({ where: { id } }),
+      prisma.bed.update({
+        where: { id: admission.bedId },
+        data: { status: 'AVAILABLE' },
+      }),
+    ]);
+
+    res.json({ message: 'Admission deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
   createWard,
   getAllWards,
@@ -209,4 +243,6 @@ module.exports = {
   admitPatient,
   getAllAdmissions,
   dischargePatient,
+  updateAdmission,
+  deleteAdmission,
 };

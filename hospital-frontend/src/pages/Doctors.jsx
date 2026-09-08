@@ -6,16 +6,37 @@ function Doctors() {
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
+
   const [form, setForm] = useState({
     name: '',
     email: '',
-    password: '123456',
+    password: '',
     specialization: '',
     phone: '',
     department: '',
   });
+
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  const specializations = [
+    'Cardiology',
+    'Dermatology',
+    'ENT',
+    'General Medicine',
+    'Gynecology',
+    'Neurology',
+    'Oncology',
+    'Orthopedics',
+    'Pediatrics',
+    'Psychiatry',
+    'Radiology',
+    'Surgery',
+    'Urology',
+    'Other',
+  ];
 
   const fetchDoctors = async () => {
     try {
@@ -32,8 +53,48 @@ function Doctors() {
     fetchDoctors();
   }, []);
 
+  const resetForm = () => {
+    setForm({
+      name: '',
+      email: '',
+      password: '',
+      specialization: '',
+      phone: '',
+      department: '',
+    });
+    setEditingId(null);
+    setShowForm(false);
+  };
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleEdit = (doctor) => {
+    setForm({
+      name: doctor.user?.name?.replace(/^Dr\.\s*/i, '') || '',
+      email: doctor.user?.email || '',
+      password: '',
+      specialization: doctor.specialization || '',
+      phone: doctor.phone || '',
+      department: doctor.department || '',
+    });
+    setEditingId(doctor.id);
+    setShowForm(true);
+    setError('');
+    setSuccess('');
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await api.delete(`/doctors/${deleteId}`);
+      setSuccess('Doctor deleted successfully');
+      setDeleteId(null);
+      fetchDoctors();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete doctor');
+      setDeleteId(null);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -42,20 +103,26 @@ function Doctors() {
     setSuccess('');
 
     try {
-      await api.post('/doctors', form);
-      setSuccess('Doctor added successfully');
-      setForm({
-        name: '',
-        email: '',
-        password: '123456',
-        specialization: '',
-        phone: '',
-        department: '',
-      });
-      setShowForm(false);
+      const payload = {
+        ...form,
+        name: form.name.startsWith('Dr.') ? form.name : `Dr. ${form.name}`,
+      };
+
+      if (editingId) {
+        // For update we don't send password if empty
+        if (!payload.password) delete payload.password;
+        await api.put(`/doctors/${editingId}`, payload);
+        setSuccess('Doctor updated successfully');
+      } else {
+        if (!payload.password) payload.password = '123456';
+        await api.post('/doctors', payload);
+        setSuccess('Doctor added successfully');
+      }
+
+      resetForm();
       fetchDoctors();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to add doctor');
+      setError(err.response?.data?.message || 'Failed to save doctor');
     }
   };
 
@@ -63,7 +130,16 @@ function Doctors() {
     <Layout>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <h1 style={{ margin: 0 }}>Doctors</h1>
-        <button onClick={() => setShowForm(!showForm)} style={styles.primaryBtn}>
+        <button
+          onClick={() => {
+            if (showForm) resetForm();
+            else {
+              setShowForm(true);
+              setEditingId(null);
+            }
+          }}
+          style={styles.primaryBtn}
+        >
           {showForm ? 'Cancel' : '+ Add Doctor'}
         </button>
       </div>
@@ -72,17 +148,78 @@ function Doctors() {
       {success && <div style={styles.success}>{success}</div>}
 
       {showForm && (
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <h3 style={{ marginTop: 0 }}>Add New Doctor</h3>
+        <form onSubmit={handleSubmit} style={styles.form} autoComplete="off">
+          <h3 style={{ marginTop: 0 }}>{editingId ? 'Edit Doctor' : 'Add New Doctor'}</h3>
           <div style={styles.formGrid}>
-            <input name="name" placeholder="Full Name *" value={form.name} onChange={handleChange} required style={styles.input} />
-            <input name="email" type="email" placeholder="Email *" value={form.email} onChange={handleChange} required style={styles.input} />
-            <input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} style={styles.input} />
-            <input name="specialization" placeholder="Specialization *" value={form.specialization} onChange={handleChange} required style={styles.input} />
-            <input name="phone" placeholder="Phone" value={form.phone} onChange={handleChange} style={styles.input} />
-            <input name="department" placeholder="Department" value={form.department} onChange={handleChange} style={styles.input} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontWeight: 600, color: '#4f46e5' }}>Dr.</span>
+              <input
+                name="name"
+                placeholder="Full Name *"
+                value={form.name}
+                onChange={handleChange}
+                required
+                style={{ ...styles.input, flex: 1 }}
+                autoComplete="off"
+              />
+            </div>
+
+            <input
+              name="email"
+              type="email"
+              placeholder="Email *"
+              value={form.email}
+              onChange={handleChange}
+              required
+              style={styles.input}
+              autoComplete="off"
+            />
+
+            <input
+              name="password"
+              type="password"
+              placeholder={editingId ? 'New Password (leave blank to keep)' : 'Password'}
+              value={form.password}
+              onChange={handleChange}
+              style={styles.input}
+              autoComplete="new-password"
+            />
+
+            <select
+              name="specialization"
+              value={form.specialization}
+              onChange={handleChange}
+              required
+              style={styles.input}
+            >
+              <option value="">Select Specialization *</option>
+              {specializations.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+
+            <input
+              name="phone"
+              placeholder="Phone"
+              value={form.phone}
+              onChange={handleChange}
+              style={styles.input}
+              autoComplete="off"
+            />
+
+            <input
+              name="department"
+              placeholder="Department"
+              value={form.department}
+              onChange={handleChange}
+              style={styles.input}
+              autoComplete="off"
+            />
           </div>
-          <button type="submit" style={styles.primaryBtn}>Save Doctor</button>
+
+          <button type="submit" style={styles.primaryBtn}>
+            {editingId ? 'Update Doctor' : 'Save Doctor'}
+          </button>
         </form>
       )}
 
@@ -98,12 +235,13 @@ function Doctors() {
                 <th style={styles.th}>Specialization</th>
                 <th style={styles.th}>Department</th>
                 <th style={styles.th}>Phone</th>
+                <th style={styles.th}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {doctors.length === 0 ? (
                 <tr>
-                  <td colSpan="5" style={{ padding: 20, textAlign: 'center' }}>No doctors found</td>
+                  <td colSpan="6" style={{ padding: 20, textAlign: 'center' }}>No doctors found</td>
                 </tr>
               ) : (
                 doctors.map((d) => (
@@ -113,11 +251,31 @@ function Doctors() {
                     <td style={styles.td}>{d.specialization}</td>
                     <td style={styles.td}>{d.department || '-'}</td>
                     <td style={styles.td}>{d.phone || '-'}</td>
+                    <td style={styles.td}>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={() => handleEdit(d)} style={styles.editBtn}>Edit</button>
+                        <button onClick={() => setDeleteId(d.id)} style={styles.deleteBtn}>Delete</button>
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Delete Confirmation Popup */}
+      {deleteId && (
+        <div style={styles.overlay}>
+          <div style={styles.modal}>
+            <h3 style={{ marginTop: 0 }}>Confirm Delete</h3>
+            <p>Are you sure you want to delete this doctor? This action cannot be undone.</p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+              <button onClick={() => setDeleteId(null)} style={styles.cancelBtn}>Cancel</button>
+              <button onClick={confirmDelete} style={styles.deleteBtn}>Yes, Delete</button>
+            </div>
+          </div>
         </div>
       )}
     </Layout>
@@ -130,6 +288,33 @@ const styles = {
     color: 'white',
     border: 'none',
     padding: '10px 16px',
+    borderRadius: 6,
+    cursor: 'pointer',
+    fontSize: 14,
+  },
+  editBtn: {
+    background: '#3b82f6',
+    color: 'white',
+    border: 'none',
+    padding: '5px 10px',
+    borderRadius: 4,
+    cursor: 'pointer',
+    fontSize: 12,
+  },
+  deleteBtn: {
+    background: '#ef4444',
+    color: 'white',
+    border: 'none',
+    padding: '5px 10px',
+    borderRadius: 4,
+    cursor: 'pointer',
+    fontSize: 12,
+  },
+  cancelBtn: {
+    background: '#94a3b8',
+    color: 'white',
+    border: 'none',
+    padding: '8px 16px',
     borderRadius: 6,
     cursor: 'pointer',
     fontSize: 14,
@@ -152,6 +337,8 @@ const styles = {
     border: '1px solid #ddd',
     borderRadius: 6,
     fontSize: 14,
+    width: '100%',
+    boxSizing: 'border-box',
   },
   tableWrapper: {
     background: 'white',
@@ -189,6 +376,26 @@ const styles = {
     padding: 12,
     borderRadius: 6,
     marginBottom: 16,
+  },
+  overlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0,0,0,0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modal: {
+    background: 'white',
+    padding: 24,
+    borderRadius: 10,
+    width: '100%',
+    maxWidth: 400,
+    boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
   },
 };
 

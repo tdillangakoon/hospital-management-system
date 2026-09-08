@@ -6,10 +6,13 @@ function Pharmacy() {
   const [medicines, setMedicines] = useState([]);
   const [dispenses, setDispenses] = useState([]);
   const [patients, setPatients] = useState([]);
+  const [doctors, setDoctors] = useState([]);   // ← must be inside the function
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('medicines'); // medicines | dispenses
+  const [tab, setTab] = useState('medicines');
   const [showMedicineForm, setShowMedicineForm] = useState(false);
   const [showDispenseForm, setShowDispenseForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
 
   const [medicineForm, setMedicineForm] = useState({
     name: '',
@@ -35,14 +38,16 @@ function Pharmacy() {
 
   const fetchData = async () => {
     try {
-      const [medRes, disRes, patRes] = await Promise.all([
+      const [medRes, disRes, patRes, docRes] = await Promise.all([
         api.get('/pharmacy/medicines'),
         api.get('/pharmacy/dispenses'),
         api.get('/patients'),
+        api.get('/doctors'),
       ]);
       setMedicines(medRes.data);
       setDispenses(disRes.data);
       setPatients(patRes.data);
+      setDoctors(docRes.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -54,31 +59,74 @@ function Pharmacy() {
     fetchData();
   }, []);
 
-  const handleCreateMedicine = async (e) => {
+  const resetMedicineForm = () => {
+    setMedicineForm({
+      name: '',
+      genericName: '',
+      category: '',
+      unit: 'Tablet',
+      price: '',
+      stockQuantity: '',
+      expiryDate: '',
+      manufacturer: '',
+    });
+    setEditingId(null);
+    setShowMedicineForm(false);
+  };
+
+  const handleEdit = (medicine) => {
+    setMedicineForm({
+      name: medicine.name || '',
+      genericName: medicine.genericName || '',
+      category: medicine.category || '',
+      unit: medicine.unit || 'Tablet',
+      price: medicine.price || '',
+      stockQuantity: medicine.stockQuantity || '',
+      expiryDate: medicine.expiryDate ? medicine.expiryDate.split('T')[0] : '',
+      manufacturer: medicine.manufacturer || '',
+    });
+    setEditingId(medicine.id);
+    setShowMedicineForm(true);
+    setError('');
+    setSuccess('');
+  };
+
+  const handleCreateOrUpdateMedicine = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+
     try {
-      await api.post('/pharmacy/medicines', {
+      const payload = {
         ...medicineForm,
         price: parseFloat(medicineForm.price),
         stockQuantity: parseInt(medicineForm.stockQuantity),
-      });
-      setSuccess('Medicine added successfully');
-      setMedicineForm({
-        name: '',
-        genericName: '',
-        category: '',
-        unit: 'Tablet',
-        price: '',
-        stockQuantity: '',
-        expiryDate: '',
-        manufacturer: '',
-      });
-      setShowMedicineForm(false);
+      };
+
+      if (editingId) {
+        await api.put(`/pharmacy/medicines/${editingId}`, payload);
+        setSuccess('Medicine updated successfully');
+      } else {
+        await api.post('/pharmacy/medicines', payload);
+        setSuccess('Medicine added successfully');
+      }
+
+      resetMedicineForm();
       fetchData();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to add medicine');
+      setError(err.response?.data?.message || 'Failed to save medicine');
+    }
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await api.delete(`/pharmacy/medicines/${deleteId}`);
+      setSuccess('Medicine deleted successfully');
+      setDeleteId(null);
+      fetchData();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete medicine');
+      setDeleteId(null);
     }
   };
 
@@ -86,6 +134,7 @@ function Pharmacy() {
     e.preventDefault();
     setError('');
     setSuccess('');
+
     try {
       await api.post('/pharmacy/dispense', {
         ...dispenseForm,
@@ -127,7 +176,16 @@ function Pharmacy() {
       {tab === 'medicines' && (
         <>
           <div style={{ marginBottom: 16, display: 'flex', gap: 10 }}>
-            <button onClick={() => setShowMedicineForm(!showMedicineForm)} style={styles.primaryBtn}>
+            <button
+              onClick={() => {
+                if (showMedicineForm) resetMedicineForm();
+                else {
+                  setShowMedicineForm(true);
+                  setEditingId(null);
+                }
+              }}
+              style={styles.primaryBtn}
+            >
               {showMedicineForm ? 'Cancel' : '+ Add Medicine'}
             </button>
             <button onClick={() => setShowDispenseForm(!showDispenseForm)} style={styles.secondaryBtn}>
@@ -136,8 +194,8 @@ function Pharmacy() {
           </div>
 
           {showMedicineForm && (
-            <form onSubmit={handleCreateMedicine} style={styles.form}>
-              <h3 style={{ marginTop: 0 }}>Add Medicine</h3>
+            <form onSubmit={handleCreateOrUpdateMedicine} style={styles.form}>
+              <h3 style={{ marginTop: 0 }}>{editingId ? 'Edit Medicine' : 'Add Medicine'}</h3>
               <div style={styles.formGrid}>
                 <input placeholder="Medicine Name *" value={medicineForm.name} onChange={(e) => setMedicineForm({ ...medicineForm, name: e.target.value })} required style={styles.input} />
                 <input placeholder="Generic Name" value={medicineForm.genericName} onChange={(e) => setMedicineForm({ ...medicineForm, genericName: e.target.value })} style={styles.input} />
@@ -151,10 +209,12 @@ function Pharmacy() {
                 </select>
                 <input type="number" placeholder="Price *" value={medicineForm.price} onChange={(e) => setMedicineForm({ ...medicineForm, price: e.target.value })} required style={styles.input} />
                 <input type="number" placeholder="Stock Quantity *" value={medicineForm.stockQuantity} onChange={(e) => setMedicineForm({ ...medicineForm, stockQuantity: e.target.value })} required style={styles.input} />
-                <input type="date" placeholder="Expiry Date" value={medicineForm.expiryDate} onChange={(e) => setMedicineForm({ ...medicineForm, expiryDate: e.target.value })} style={styles.input} />
+                <input type="date" value={medicineForm.expiryDate} onChange={(e) => setMedicineForm({ ...medicineForm, expiryDate: e.target.value })} style={styles.input} />
                 <input placeholder="Manufacturer" value={medicineForm.manufacturer} onChange={(e) => setMedicineForm({ ...medicineForm, manufacturer: e.target.value })} style={styles.input} />
               </div>
-              <button type="submit" style={styles.primaryBtn}>Save Medicine</button>
+              <button type="submit" style={styles.primaryBtn}>
+                {editingId ? 'Update Medicine' : 'Save Medicine'}
+              </button>
             </form>
           )}
 
@@ -177,14 +237,16 @@ function Pharmacy() {
                   ))}
                 </select>
                 <input type="number" placeholder="Quantity *" value={dispenseForm.quantity} onChange={(e) => setDispenseForm({ ...dispenseForm, quantity: e.target.value })} required style={styles.input} />
-                <input placeholder="Prescribed By" value={dispenseForm.prescribedBy} onChange={(e) => setDispenseForm({ ...dispenseForm, prescribedBy: e.target.value })} style={styles.input} />
+                <select value={dispenseForm.prescribedBy} onChange={(e) => setDispenseForm({ ...dispenseForm, prescribedBy: e.target.value })} style={styles.input}> <option value="">Select Doctor</option> {doctors.map((d) => ( <option key={d.id} value={d.user?.name}>{d.user?.name} - {d.specialization}</option>))}</select>
                 <input placeholder="Notes" value={dispenseForm.notes} onChange={(e) => setDispenseForm({ ...dispenseForm, notes: e.target.value })} style={{ ...styles.input, gridColumn: '1 / -1' }} />
               </div>
               <button type="submit" style={styles.primaryBtn}>Dispense</button>
             </form>
           )}
 
-          {loading ? <p>Loading...</p> : (
+          {loading ? (
+            <p>Loading...</p>
+          ) : (
             <div style={styles.tableWrapper}>
               <table style={styles.table}>
                 <thead>
@@ -195,11 +257,14 @@ function Pharmacy() {
                     <th style={styles.th}>Price</th>
                     <th style={styles.th}>Stock</th>
                     <th style={styles.th}>Expiry</th>
+                    <th style={styles.th}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {medicines.length === 0 ? (
-                    <tr><td colSpan="6" style={{ padding: 20, textAlign: 'center' }}>No medicines found</td></tr>
+                    <tr>
+                      <td colSpan="7" style={{ padding: 20, textAlign: 'center' }}>No medicines found</td>
+                    </tr>
                   ) : (
                     medicines.map((m) => (
                       <tr key={m.id}>
@@ -213,6 +278,12 @@ function Pharmacy() {
                           </span>
                         </td>
                         <td style={styles.td}>{m.expiryDate ? new Date(m.expiryDate).toLocaleDateString() : '-'}</td>
+                        <td style={styles.td}>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button onClick={() => handleEdit(m)} style={styles.editBtn}>Edit</button>
+                            <button onClick={() => setDeleteId(m.id)} style={styles.deleteBtn}>Delete</button>
+                          </div>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -239,7 +310,9 @@ function Pharmacy() {
             </thead>
             <tbody>
               {dispenses.length === 0 ? (
-                <tr><td colSpan="6" style={{ padding: 20, textAlign: 'center' }}>No dispenses found</td></tr>
+                <tr>
+                  <td colSpan="6" style={{ padding: 20, textAlign: 'center' }}>No dispenses found</td>
+                </tr>
               ) : (
                 dispenses.map((d) => (
                   <tr key={d.id}>
@@ -254,6 +327,20 @@ function Pharmacy() {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Delete Confirmation Popup */}
+      {deleteId && (
+        <div style={styles.overlay}>
+          <div style={styles.modal}>
+            <h3 style={{ marginTop: 0 }}>Confirm Delete</h3>
+            <p>Are you sure you want to delete this medicine?</p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+              <button onClick={() => setDeleteId(null)} style={styles.cancelBtn}>Cancel</button>
+              <button onClick={confirmDelete} style={styles.deleteBtn}>Yes, Delete</button>
+            </div>
+          </div>
         </div>
       )}
     </Layout>
@@ -275,6 +362,33 @@ const styles = {
     color: 'white',
     border: 'none',
     padding: '10px 16px',
+    borderRadius: 6,
+    cursor: 'pointer',
+    fontSize: 14,
+  },
+  editBtn: {
+    background: '#3b82f6',
+    color: 'white',
+    border: 'none',
+    padding: '5px 10px',
+    borderRadius: 4,
+    cursor: 'pointer',
+    fontSize: 12,
+  },
+  deleteBtn: {
+    background: '#ef4444',
+    color: 'white',
+    border: 'none',
+    padding: '5px 10px',
+    borderRadius: 4,
+    cursor: 'pointer',
+    fontSize: 12,
+  },
+  cancelBtn: {
+    background: '#94a3b8',
+    color: 'white',
+    border: 'none',
+    padding: '8px 16px',
     borderRadius: 6,
     cursor: 'pointer',
     fontSize: 14,
@@ -350,6 +464,26 @@ const styles = {
     padding: 12,
     borderRadius: 6,
     marginBottom: 16,
+  },
+  overlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0,0,0,0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modal: {
+    background: 'white',
+    padding: 24,
+    borderRadius: 10,
+    width: '100%',
+    maxWidth: 400,
+    boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
   },
 };
 

@@ -8,11 +8,14 @@ function Inpatient() {
   const [admissions, setAdmissions] = useState([]);
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('admissions'); // admissions | beds | wards
+  const [tab, setTab] = useState('admissions');
+  const [doctors, setDoctors] = useState([]);
 
   const [showWardForm, setShowWardForm] = useState(false);
   const [showBedForm, setShowBedForm] = useState(false);
   const [showAdmitForm, setShowAdmitForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
 
   const [wardForm, setWardForm] = useState({ name: '', description: '', totalBeds: '' });
   const [bedForm, setBedForm] = useState({ wardId: '', bedNumber: '' });
@@ -29,16 +32,18 @@ function Inpatient() {
 
   const fetchData = async () => {
     try {
-      const [wardRes, bedRes, admRes, patRes] = await Promise.all([
+      const [wardRes, bedRes, admRes, patRes, docRes] = await Promise.all([
         api.get('/inpatient/wards'),
         api.get('/inpatient/beds'),
         api.get('/inpatient/admissions'),
         api.get('/patients'),
+        api.get('/doctors'),
       ]);
       setWards(wardRes.data);
       setBeds(bedRes.data);
       setAdmissions(admRes.data);
       setPatients(patRes.data);
+      setDoctors(docRes.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -49,6 +54,20 @@ function Inpatient() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const availableBeds = beds.filter((b) => b.status === 'AVAILABLE');
+
+  const resetAdmitForm = () => {
+    setAdmitForm({
+      patientId: '',
+      bedId: '',
+      admittedBy: '',
+      reason: '',
+      notes: '',
+    });
+    setEditingId(null);
+    setShowAdmitForm(false);
+  };
 
   const handleCreateWard = async (e) => {
     e.preventDefault();
@@ -83,18 +102,41 @@ function Inpatient() {
     }
   };
 
-  const handleAdmit = async (e) => {
+  const handleEdit = (admission) => {
+    setAdmitForm({
+      patientId: admission.patientId || '',
+      bedId: admission.bedId || '',
+      admittedBy: admission.admittedBy || '',
+      reason: admission.reason || '',
+      notes: admission.notes || '',
+    });
+    setEditingId(admission.id);
+    setShowAdmitForm(true);
+    setError('');
+    setSuccess('');
+  };
+
+  const handleAdmitOrUpdate = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+
     try {
-      await api.post('/inpatient/admissions', admitForm);
-      setSuccess('Patient admitted successfully');
-      setAdmitForm({ patientId: '', bedId: '', admittedBy: '', reason: '', notes: '' });
-      setShowAdmitForm(false);
+      if (editingId) {
+        await api.put(`/inpatient/admissions/${editingId}`, {
+          admittedBy: admitForm.admittedBy,
+          reason: admitForm.reason,
+          notes: admitForm.notes,
+        });
+        setSuccess('Admission updated successfully');
+      } else {
+        await api.post('/inpatient/admissions', admitForm);
+        setSuccess('Patient admitted successfully');
+      }
+      resetAdmitForm();
       fetchData();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to admit patient');
+      setError(err.response?.data?.message || 'Failed to save admission');
     }
   };
 
@@ -108,7 +150,17 @@ function Inpatient() {
     }
   };
 
-  const availableBeds = beds.filter((b) => b.status === 'AVAILABLE');
+  const confirmDelete = async () => {
+    try {
+      await api.delete(`/inpatient/admissions/${deleteId}`);
+      setSuccess('Admission deleted successfully');
+      setDeleteId(null);
+      fetchData();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete admission');
+      setDeleteId(null);
+    }
+  };
 
   return (
     <Layout>
@@ -128,36 +180,90 @@ function Inpatient() {
       {tab === 'admissions' && (
         <>
           <div style={{ marginBottom: 16 }}>
-            <button onClick={() => setShowAdmitForm(!showAdmitForm)} style={styles.primaryBtn}>
+            <button
+              onClick={() => {
+                if (showAdmitForm) resetAdmitForm();
+                else {
+                  setShowAdmitForm(true);
+                  setEditingId(null);
+                }
+              }}
+              style={styles.primaryBtn}
+            >
               {showAdmitForm ? 'Cancel' : '+ Admit Patient'}
             </button>
           </div>
 
           {showAdmitForm && (
-            <form onSubmit={handleAdmit} style={styles.form}>
-              <h3 style={{ marginTop: 0 }}>Admit Patient</h3>
+            <form onSubmit={handleAdmitOrUpdate} style={styles.form}>
+              <h3 style={{ marginTop: 0 }}>{editingId ? 'Edit Admission' : 'Admit Patient'}</h3>
               <div style={styles.formGrid}>
-                <select value={admitForm.patientId} onChange={(e) => setAdmitForm({ ...admitForm, patientId: e.target.value })} required style={styles.input}>
+                <select
+                  value={admitForm.patientId}
+                  onChange={(e) => setAdmitForm({ ...admitForm, patientId: e.target.value })}
+                  required
+                  style={styles.input}
+                  disabled={!!editingId}
+                >
                   <option value="">Select Patient *</option>
-                  {patients.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  {patients.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
                 </select>
-                <select value={admitForm.bedId} onChange={(e) => setAdmitForm({ ...admitForm, bedId: e.target.value })} required style={styles.input}>
+
+                <select
+                  value={admitForm.bedId}
+                  onChange={(e) => setAdmitForm({ ...admitForm, bedId: e.target.value })}
+                  required
+                  style={styles.input}
+                  disabled={!!editingId}
+                >
                   <option value="">Select Available Bed *</option>
                   {availableBeds.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.bedNumber} ({b.ward?.name})
                     </option>
                   ))}
+                  {/* Show current bed when editing */}
+                  {editingId && admitForm.bedId && (
+                    <option value={admitForm.bedId}>Current Bed</option>
+                  )}
                 </select>
-                <input placeholder="Admitted By" value={admitForm.admittedBy} onChange={(e) => setAdmitForm({ ...admitForm, admittedBy: e.target.value })} style={styles.input} />
-                <input placeholder="Reason" value={admitForm.reason} onChange={(e) => setAdmitForm({ ...admitForm, reason: e.target.value })} style={styles.input} />
-                <input placeholder="Notes" value={admitForm.notes} onChange={(e) => setAdmitForm({ ...admitForm, notes: e.target.value })} style={{ ...styles.input, gridColumn: '1 / -1' }} />
+
+                <select
+                  value={admitForm.admittedBy}
+                  onChange={(e) => setAdmitForm({ ...admitForm, admittedBy: e.target.value })}
+                  style={styles.input}
+                >
+                <option value="">Select Doctor</option>
+                  {doctors.map((d) => (
+                <option key={d.id} value={d.user?.name}>
+                  {d.user?.name} - {d.specialization}
+                </option>
+                ))}
+                </select>
+                <input
+                  placeholder="Reason"
+                  value={admitForm.reason}
+                  onChange={(e) => setAdmitForm({ ...admitForm, reason: e.target.value })}
+                  style={styles.input}
+                />
+                <input
+                  placeholder="Notes"
+                  value={admitForm.notes}
+                  onChange={(e) => setAdmitForm({ ...admitForm, notes: e.target.value })}
+                  style={{ ...styles.input, gridColumn: '1 / -1' }}
+                />
               </div>
-              <button type="submit" style={styles.primaryBtn}>Admit</button>
+              <button type="submit" style={styles.primaryBtn}>
+                {editingId ? 'Update Admission' : 'Admit'}
+              </button>
             </form>
           )}
 
-          {loading ? <p>Loading...</p> : (
+          {loading ? (
+            <p>Loading...</p>
+          ) : (
             <div style={styles.tableWrapper}>
               <table style={styles.table}>
                 <thead>
@@ -168,12 +274,14 @@ function Inpatient() {
                     <th style={styles.th}>Reason</th>
                     <th style={styles.th}>Status</th>
                     <th style={styles.th}>Admitted</th>
-                    <th style={styles.th}>Action</th>
+                    <th style={styles.th}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {admissions.length === 0 ? (
-                    <tr><td colSpan="7" style={{ padding: 20, textAlign: 'center' }}>No admissions</td></tr>
+                    <tr>
+                      <td colSpan="7" style={{ padding: 20, textAlign: 'center' }}>No admissions</td>
+                    </tr>
                   ) : (
                     admissions.map((a) => (
                       <tr key={a.id}>
@@ -192,11 +300,15 @@ function Inpatient() {
                         </td>
                         <td style={styles.td}>{new Date(a.admissionDate).toLocaleDateString()}</td>
                         <td style={styles.td}>
-                          {a.status === 'ADMITTED' && (
-                            <button onClick={() => handleDischarge(a.id)} style={styles.smallBtn}>
-                              Discharge
-                            </button>
-                          )}
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            <button onClick={() => handleEdit(a)} style={styles.editBtn}>Edit</button>
+                            {a.status === 'ADMITTED' && (
+                              <button onClick={() => handleDischarge(a.id)} style={styles.dischargeBtn}>
+                                Discharge
+                              </button>
+                            )}
+                            <button onClick={() => setDeleteId(a.id)} style={styles.deleteBtn}>Delete</button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -305,6 +417,20 @@ function Inpatient() {
           </div>
         </>
       )}
+
+      {/* Delete Confirmation Popup */}
+      {deleteId && (
+        <div style={styles.overlay}>
+          <div style={styles.modal}>
+            <h3 style={{ marginTop: 0 }}>Confirm Delete</h3>
+            <p>Are you sure you want to delete this admission? The bed will be freed.</p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+              <button onClick={() => setDeleteId(null)} style={styles.cancelBtn}>Cancel</button>
+              <button onClick={confirmDelete} style={styles.deleteBtn}>Yes, Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
@@ -319,7 +445,16 @@ const styles = {
     cursor: 'pointer',
     fontSize: 14,
   },
-  smallBtn: {
+  editBtn: {
+    background: '#3b82f6',
+    color: 'white',
+    border: 'none',
+    padding: '5px 10px',
+    borderRadius: 4,
+    cursor: 'pointer',
+    fontSize: 12,
+  },
+  dischargeBtn: {
     background: '#10b981',
     color: 'white',
     border: 'none',
@@ -327,6 +462,24 @@ const styles = {
     borderRadius: 4,
     cursor: 'pointer',
     fontSize: 12,
+  },
+  deleteBtn: {
+    background: '#ef4444',
+    color: 'white',
+    border: 'none',
+    padding: '5px 10px',
+    borderRadius: 4,
+    cursor: 'pointer',
+    fontSize: 12,
+  },
+  cancelBtn: {
+    background: '#94a3b8',
+    color: 'white',
+    border: 'none',
+    padding: '8px 16px',
+    borderRadius: 6,
+    cursor: 'pointer',
+    fontSize: 14,
   },
   tab: {
     background: '#e2e8f0',
@@ -407,6 +560,26 @@ const styles = {
     padding: 12,
     borderRadius: 6,
     marginBottom: 16,
+  },
+  overlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0,0,0,0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modal: {
+    background: 'white',
+    padding: 24,
+    borderRadius: 10,
+    width: '100%',
+    maxWidth: 400,
+    boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
   },
 };
 

@@ -1,5 +1,6 @@
 const prisma = require('../utils/prisma');
 
+// Create Bill
 const createBill = async (req, res) => {
   try {
     const { patientId, amount, description } = req.body;
@@ -32,6 +33,7 @@ const createBill = async (req, res) => {
   }
 };
 
+// Get All Bills
 const getAllBills = async (req, res) => {
   try {
     const bills = await prisma.bill.findMany({
@@ -51,6 +53,7 @@ const getAllBills = async (req, res) => {
   }
 };
 
+// Get Bills by Patient
 const getBillsByPatient = async (req, res) => {
   try {
     const { patientId } = req.params;
@@ -70,6 +73,7 @@ const getBillsByPatient = async (req, res) => {
   }
 };
 
+// Get Single Bill
 const getBillById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -93,6 +97,38 @@ const getBillById = async (req, res) => {
   }
 };
 
+// Update Bill
+const updateBill = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount, description, status } = req.body;
+
+    const bill = await prisma.bill.update({
+      where: { id },
+      data: {
+        amount: amount !== undefined ? parseFloat(amount) : undefined,
+        description,
+        status,
+      },
+      include: {
+        patient: {
+          select: { id: true, name: true, phone: true },
+        },
+        payments: true,
+      },
+    });
+
+    res.json({
+      message: 'Bill updated successfully',
+      bill,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Record Payment
 const recordPayment = async (req, res) => {
   try {
     const { billId } = req.params;
@@ -146,6 +182,7 @@ const recordPayment = async (req, res) => {
   }
 };
 
+// Delete Bill
 const deleteBill = async (req, res) => {
   try {
     const { id } = req.params;
@@ -170,6 +207,7 @@ module.exports = {
   getAllBills,
   getBillsByPatient,
   getBillById,
+  updateBill,
   recordPayment,
   deleteBill,
 };

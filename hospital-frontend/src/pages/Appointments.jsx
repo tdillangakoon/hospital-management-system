@@ -8,6 +8,9 @@ function Appointments() {
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
+
   const [form, setForm] = useState({
     patientId: '',
     doctorId: '',
@@ -15,7 +18,9 @@ function Appointments() {
     time: '',
     reason: '',
     notes: '',
+    status: 'SCHEDULED',
   });
+
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -40,8 +45,38 @@ function Appointments() {
     fetchData();
   }, []);
 
+  const resetForm = () => {
+    setForm({
+      patientId: '',
+      doctorId: '',
+      date: '',
+      time: '',
+      reason: '',
+      notes: '',
+      status: 'SCHEDULED',
+    });
+    setEditingId(null);
+    setShowForm(false);
+  };
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleEdit = (appointment) => {
+    setForm({
+      patientId: appointment.patientId || '',
+      doctorId: appointment.doctorId || '',
+      date: appointment.date ? appointment.date.split('T')[0] : '',
+      time: appointment.time || '',
+      reason: appointment.reason || '',
+      notes: appointment.notes || '',
+      status: appointment.status || 'SCHEDULED',
+    });
+    setEditingId(appointment.id);
+    setShowForm(true);
+    setError('');
+    setSuccess('');
   };
 
   const handleSubmit = async (e) => {
@@ -50,29 +85,39 @@ function Appointments() {
     setSuccess('');
 
     try {
-      await api.post('/appointments', form);
-      setSuccess('Appointment booked successfully');
-      setForm({
-        patientId: '',
-        doctorId: '',
-        date: '',
-        time: '',
-        reason: '',
-        notes: '',
-      });
-      setShowForm(false);
+      if (editingId) {
+        await api.put(`/appointments/${editingId}`, form);
+        setSuccess('Appointment updated successfully');
+      } else {
+        await api.post('/appointments', form);
+        setSuccess('Appointment booked successfully');
+      }
+      resetForm();
       fetchData();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to book appointment');
+      setError(err.response?.data?.message || 'Failed to save appointment');
     }
   };
 
   const updateStatus = async (id, status) => {
     try {
       await api.put(`/appointments/${id}`, { status });
+      setSuccess(`Appointment marked as ${status}`);
       fetchData();
     } catch (err) {
-      console.error(err);
+      setError(err.response?.data?.message || 'Failed to update status');
+    }
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await api.delete(`/appointments/${deleteId}`);
+      setSuccess('Appointment deleted successfully');
+      setDeleteId(null);
+      fetchData();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete appointment');
+      setDeleteId(null);
     }
   };
 
@@ -80,7 +125,16 @@ function Appointments() {
     <Layout>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <h1 style={{ margin: 0 }}>Appointments</h1>
-        <button onClick={() => setShowForm(!showForm)} style={styles.primaryBtn}>
+        <button
+          onClick={() => {
+            if (showForm) resetForm();
+            else {
+              setShowForm(true);
+              setEditingId(null);
+            }
+          }}
+          style={styles.primaryBtn}
+        >
           {showForm ? 'Cancel' : '+ Book Appointment'}
         </button>
       </div>
@@ -90,7 +144,7 @@ function Appointments() {
 
       {showForm && (
         <form onSubmit={handleSubmit} style={styles.form}>
-          <h3 style={{ marginTop: 0 }}>Book New Appointment</h3>
+          <h3 style={{ marginTop: 0 }}>{editingId ? 'Edit Appointment' : 'Book New Appointment'}</h3>
           <div style={styles.formGrid}>
             <select name="patientId" value={form.patientId} onChange={handleChange} required style={styles.input}>
               <option value="">Select Patient *</option>
@@ -111,9 +165,21 @@ function Appointments() {
             <input name="date" type="date" value={form.date} onChange={handleChange} required style={styles.input} />
             <input name="time" type="time" value={form.time} onChange={handleChange} required style={styles.input} />
             <input name="reason" placeholder="Reason" value={form.reason} onChange={handleChange} style={styles.input} />
+            
+            {editingId && (
+              <select name="status" value={form.status} onChange={handleChange} style={styles.input}>
+                <option value="SCHEDULED">SCHEDULED</option>
+                <option value="COMPLETED">COMPLETED</option>
+                <option value="CANCELLED">CANCELLED</option>
+                <option value="NO_SHOW">NO_SHOW</option>
+              </select>
+            )}
+
             <input name="notes" placeholder="Notes" value={form.notes} onChange={handleChange} style={styles.input} />
           </div>
-          <button type="submit" style={styles.primaryBtn}>Book Appointment</button>
+          <button type="submit" style={styles.primaryBtn}>
+            {editingId ? 'Update Appointment' : 'Book Appointment'}
+          </button>
         </form>
       )}
 
@@ -156,18 +222,36 @@ function Appointments() {
                       </span>
                     </td>
                     <td style={styles.td}>
-                      {a.status === 'SCHEDULED' && (
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <button onClick={() => updateStatus(a.id, 'COMPLETED')} style={styles.smallBtn}>Complete</button>
-                          <button onClick={() => updateStatus(a.id, 'CANCELLED')} style={{ ...styles.smallBtn, background: '#ef4444' }}>Cancel</button>
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <button onClick={() => handleEdit(a)} style={styles.editBtn}>Edit</button>
+                        {a.status === 'SCHEDULED' && (
+                          <>
+                            <button onClick={() => updateStatus(a.id, 'COMPLETED')} style={styles.completeBtn}>Complete</button>
+                            <button onClick={() => updateStatus(a.id, 'CANCELLED')} style={styles.cancelStatusBtn}>Cancel</button>
+                          </>
+                        )}
+                        <button onClick={() => setDeleteId(a.id)} style={styles.deleteBtn}>Delete</button>
+                      </div>
                     </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Delete Confirmation Popup */}
+      {deleteId && (
+        <div style={styles.overlay}>
+          <div style={styles.modal}>
+            <h3 style={{ marginTop: 0 }}>Confirm Delete</h3>
+            <p>Are you sure you want to delete this appointment?</p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+              <button onClick={() => setDeleteId(null)} style={styles.cancelBtn}>Cancel</button>
+              <button onClick={confirmDelete} style={styles.deleteBtn}>Yes, Delete</button>
+            </div>
+          </div>
         </div>
       )}
     </Layout>
@@ -184,7 +268,16 @@ const styles = {
     cursor: 'pointer',
     fontSize: 14,
   },
-  smallBtn: {
+  editBtn: {
+    background: '#3b82f6',
+    color: 'white',
+    border: 'none',
+    padding: '5px 10px',
+    borderRadius: 4,
+    cursor: 'pointer',
+    fontSize: 12,
+  },
+  completeBtn: {
     background: '#10b981',
     color: 'white',
     border: 'none',
@@ -192,6 +285,33 @@ const styles = {
     borderRadius: 4,
     cursor: 'pointer',
     fontSize: 12,
+  },
+  cancelStatusBtn: {
+    background: '#f59e0b',
+    color: 'white',
+    border: 'none',
+    padding: '5px 10px',
+    borderRadius: 4,
+    cursor: 'pointer',
+    fontSize: 12,
+  },
+  deleteBtn: {
+    background: '#ef4444',
+    color: 'white',
+    border: 'none',
+    padding: '5px 10px',
+    borderRadius: 4,
+    cursor: 'pointer',
+    fontSize: 12,
+  },
+  cancelBtn: {
+    background: '#94a3b8',
+    color: 'white',
+    border: 'none',
+    padding: '8px 16px',
+    borderRadius: 6,
+    cursor: 'pointer',
+    fontSize: 14,
   },
   form: {
     background: 'white',
@@ -254,6 +374,26 @@ const styles = {
     padding: 12,
     borderRadius: 6,
     marginBottom: 16,
+  },
+  overlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0,0,0,0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modal: {
+    background: 'white',
+    padding: 24,
+    borderRadius: 10,
+    width: '100%',
+    maxWidth: 400,
+    boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
   },
 };
 
