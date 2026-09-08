@@ -31,7 +31,7 @@ function MedicalRecords() {
       ]);
       setRecords(recRes.data);
       setPatients(patRes.data);
-      // Only show non-cancelled appointments
+
       setAppointments(appRes.data.filter((a) => a.status !== 'CANCELLED'));
     } catch (err) {
       console.error(err);
