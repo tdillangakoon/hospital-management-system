@@ -12,9 +12,38 @@ import Pharmacy from './pages/Pharmacy';
 import Inpatient from './pages/Inpatient';
 import Staff from './pages/Staff';
 
-function PrivateRoute({ children }) {
-  const { token } = useAuth();
-  return token ? children : <Navigate to="/login" />;
+const roleAccess = {
+  ADMIN: [
+    '/dashboard',
+    '/patients',
+    '/doctors',
+    '/appointments',
+    '/medical-records',
+    '/bills',
+    '/lab',
+    '/pharmacy',
+    '/inpatient',
+    '/staff',
+  ],
+  DOCTOR: ['/dashboard', '/patients', '/appointments', '/medical-records', '/lab', '/inpatient'],
+  RECEPTIONIST: ['/dashboard', '/patients', '/appointments', '/bills', '/inpatient'],
+  NURSE: ['/dashboard', '/patients', '/appointments', '/medical-records', '/inpatient'],
+  LAB_TECHNICIAN: ['/dashboard', '/lab'],
+  PHARMACIST: ['/dashboard', '/pharmacy'],
+  ACCOUNTANT: ['/dashboard', '/bills'],
+};
+
+function PrivateRoute({ children, path }) {
+  const { token, user } = useAuth();
+
+  if (!token) return <Navigate to="/login" />;
+
+  const allowed = roleAccess[user?.role] || [];
+  if (path && !allowed.includes(path)) {
+    return <Navigate to="/dashboard" />;
+  }
+
+  return children;
 }
 
 function App() {
@@ -23,87 +52,20 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/patients"
-            element={
-              <PrivateRoute>
-                <Patients />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/doctors"
-            element={
-              <PrivateRoute>
-                <Doctors />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/appointments"
-            element={
-              <PrivateRoute>
-                <Appointments />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/medical-records"
-            element={
-              <PrivateRoute>
-                <MedicalRecords />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/bills"
-            element={
-              <PrivateRoute>
-                <Bills />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/lab"
-            element={
-              <PrivateRoute>
-                <Laboratory />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/pharmacy"
-            element={
-              <PrivateRoute>
-                <Pharmacy />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/inpatient"
-            element={
-              <PrivateRoute>
-                <Inpatient />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/staff"
-            element={
-              <PrivateRoute>
-                <Staff />
-              </PrivateRoute>
-            }
-          />
+
+          <Route path="/dashboard" element={<PrivateRoute path="/dashboard"><Dashboard /></PrivateRoute>} />
+          <Route path="/patients" element={<PrivateRoute path="/patients"><Patients /></PrivateRoute>} />
+          <Route path="/doctors" element={<PrivateRoute path="/doctors"><Doctors /></PrivateRoute>} />
+          <Route path="/appointments" element={<PrivateRoute path="/appointments"><Appointments /></PrivateRoute>} />
+          <Route path="/medical-records" element={<PrivateRoute path="/medical-records"><MedicalRecords /></PrivateRoute>} />
+          <Route path="/bills" element={<PrivateRoute path="/bills"><Bills /></PrivateRoute>} />
+          <Route path="/lab" element={<PrivateRoute path="/lab"><Laboratory /></PrivateRoute>} />
+          <Route path="/pharmacy" element={<PrivateRoute path="/pharmacy"><Pharmacy /></PrivateRoute>} />
+          <Route path="/inpatient" element={<PrivateRoute path="/inpatient"><Inpatient /></PrivateRoute>} />
+          <Route path="/staff" element={<PrivateRoute path="/staff"><Staff /></PrivateRoute>} />
+
           <Route path="/" element={<Navigate to="/dashboard" />} />
+          <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
