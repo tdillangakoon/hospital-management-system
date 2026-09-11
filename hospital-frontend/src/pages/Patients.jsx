@@ -8,6 +8,7 @@ function Patients() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [search, setSearch] = useState('');
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -103,12 +104,23 @@ function Patients() {
     }
   };
 
+  const filteredPatients = patients.filter((p) => {
+    const q = search.toLowerCase();
+    return (
+      p.name?.toLowerCase().includes(q) ||
+      p.email?.toLowerCase().includes(q) ||
+      p.phone?.toLowerCase().includes(q) ||
+      p.bloodGroup?.toLowerCase().includes(q) ||
+      p.address?.toLowerCase().includes(q)
+    );
+  });
+
   return (
     <Layout>
       <div style={styles.header}>
         <div>
           <h1 style={styles.title}>Patients</h1>
-          <p style={styles.subtitle}>Manage patient records and profiles</p>
+          <p style={styles.subtitle}>Manage patient records</p>
         </div>
         <button
           onClick={() => {
@@ -156,6 +168,14 @@ function Patients() {
       )}
 
       <div style={styles.card}>
+        <input
+          type="text"
+          placeholder="Search patients by name, phone, email, blood group..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={styles.search}
+        />
+
         {loading ? (
           <p>Loading patients...</p>
         ) : (
@@ -173,14 +193,14 @@ function Patients() {
                 </tr>
               </thead>
               <tbody>
-                {patients.length === 0 ? (
+                {filteredPatients.length === 0 ? (
                   <tr>
                     <td colSpan="7" style={{ padding: 20, textAlign: 'center', color: '#64748b' }}>
                       No patients found
                     </td>
                   </tr>
                 ) : (
-                  patients.map((p) => (
+                  filteredPatients.map((p) => (
                     <tr key={p.id}>
                       <td style={styles.td}>{p.name}</td>
                       <td style={styles.td}>{p.phone}</td>
@@ -209,7 +229,7 @@ function Patients() {
         <div style={styles.overlay}>
           <div style={styles.modal}>
             <h3 style={{ marginTop: 0 }}>Confirm Delete</h3>
-            <p style={{ color: '#64748b' }}>Are you sure you want to delete this patient? This action cannot be undone.</p>
+            <p style={{ color: '#64748b' }}>Are you sure you want to delete this patient?</p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
               <button onClick={() => setDeleteId(null)} style={styles.cancelBtn}>Cancel</button>
               <button onClick={confirmDelete} style={styles.deleteBtn}>Yes, Delete</button>
@@ -228,18 +248,10 @@ const styles = {
     alignItems: 'center',
     marginBottom: 20,
   },
-  title: {
-    margin: 0,
-    fontSize: 28,
-    color: '#0f172a',
-  },
-  subtitle: {
-    margin: '4px 0 0',
-    color: '#64748b',
-    fontSize: 14,
-  },
+  title: { margin: 0, fontSize: 28, color: '#0f172a' },
+  subtitle: { margin: '4px 0 0', color: '#64748b', fontSize: 14 },
   primaryBtn: {
-    background: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
+    background: 'linear-gradient(135deg, #f59e0b, #fb923c)',
     color: 'white',
     border: 'none',
     padding: '10px 16px',
@@ -247,12 +259,12 @@ const styles = {
     cursor: 'pointer',
     fontSize: 14,
     fontWeight: 600,
-    boxShadow: '0 8px 18px rgba(14,165,233,0.25)',
+    boxShadow: '0 8px 18px rgba(245,158,11,0.25)',
   },
   editBtn: {
-    background: '#e0f2fe',
-    color: '#0369a1',
-    border: '1px solid #bae6fd',
+    background: '#ecfdf5',
+    color: '#0f766e',
+    border: '1px solid #a7f3d0',
     padding: '6px 10px',
     borderRadius: 8,
     cursor: 'pointer',
@@ -260,9 +272,9 @@ const styles = {
     fontWeight: 600,
   },
   deleteBtn: {
-    background: '#fee2e2',
-    color: '#dc2626',
-    border: '1px solid #fecaca',
+    background: '#fff1f2',
+    color: '#e11d48',
+    border: '1px solid #fecdd3',
     padding: '6px 10px',
     borderRadius: 8,
     cursor: 'pointer',
@@ -270,7 +282,7 @@ const styles = {
     fontWeight: 600,
   },
   cancelBtn: {
-    background: '#f1f5f9',
+    background: '#f8fafc',
     color: '#334155',
     border: '1px solid #e2e8f0',
     padding: '8px 14px',
@@ -279,19 +291,14 @@ const styles = {
     fontSize: 13,
   },
   card: {
-    background: 'rgba(255,255,255,0.82)',
-    backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(255,255,255,0.9)',
+    background: '#ffffff',
+    border: '1px solid #ffedd5',
     borderRadius: 16,
     padding: 18,
     marginBottom: 18,
-    boxShadow: '0 10px 28px rgba(2,132,199,0.06)',
+    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.04)',
   },
-  cardTitle: {
-    marginTop: 0,
-    marginBottom: 14,
-    color: '#0f172a',
-  },
+  cardTitle: { marginTop: 0, marginBottom: 14, color: '#0f172a' },
   formGrid: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
@@ -300,45 +307,51 @@ const styles = {
   },
   input: {
     padding: '11px 12px',
-    border: '1px solid #dbeafe',
+    border: '1px solid #e2e8f0',
     borderRadius: 10,
     fontSize: 14,
-    background: 'rgba(255,255,255,0.95)',
+    background: '#fffdf9',
     outline: 'none',
   },
-  table: {
+  search: {
     width: '100%',
-    borderCollapse: 'collapse',
-    minWidth: 900,
+    maxWidth: 420,
+    marginBottom: 14,
+    padding: '11px 14px',
+    borderRadius: 10,
+    border: '1px solid #e2e8f0',
+    background: '#fffdf9',
+    outline: 'none',
   },
+  table: { width: '100%', borderCollapse: 'collapse', minWidth: 900 },
   th: {
     textAlign: 'left',
     padding: '12px 14px',
-    background: '#f0f9ff',
+    background: '#fff7ed',
     fontSize: 12,
-    color: '#0369a1',
-    borderBottom: '1px solid #e0f2fe',
+    color: '#c2410c',
+    borderBottom: '1px solid #ffedd5',
     fontWeight: 700,
   },
   td: {
     padding: '12px 14px',
-    borderBottom: '1px solid #f1f5f9',
+    borderBottom: '1px solid #f8fafc',
     fontSize: 14,
     color: '#0f172a',
   },
   pill: {
-    background: '#ecfeff',
-    color: '#0e7490',
-    border: '1px solid #a5f3fc',
+    background: '#ecfdf5',
+    color: '#0f766e',
+    border: '1px solid #a7f3d0',
     padding: '3px 8px',
     borderRadius: 999,
     fontSize: 12,
     fontWeight: 600,
   },
   error: {
-    background: '#fef2f2',
-    color: '#dc2626',
-    border: '1px solid #fecaca',
+    background: '#fff1f2',
+    color: '#e11d48',
+    border: '1px solid #fecdd3',
     padding: 12,
     borderRadius: 10,
     marginBottom: 14,
@@ -353,10 +366,7 @@ const styles = {
   },
   overlay: {
     position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    inset: 0,
     background: 'rgba(15, 23, 42, 0.45)',
     display: 'flex',
     justifyContent: 'center',
