@@ -13,6 +13,8 @@ const pharmacyRoutes = require('./routes/pharmacyRoutes');
 const inpatientRoutes = require('./routes/inpatientRoutes');
 const staffRoutes = require('./routes/staffRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const reportRoutes = require('./routes/reportRoutes');
+const hrRoutes = require('./routes/hrRoutes');
 
 const app = express();
 
@@ -30,6 +32,8 @@ app.use('/api/pharmacy', pharmacyRoutes);
 app.use('/api/inpatient', inpatientRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/hr', hrRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Hospital Management System API is running' });

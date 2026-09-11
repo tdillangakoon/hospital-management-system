@@ -11,6 +11,8 @@ import Laboratory from './pages/Laboratory';
 import Pharmacy from './pages/Pharmacy';
 import Inpatient from './pages/Inpatient';
 import Staff from './pages/Staff';
+import Reports from './pages/Reports';
+import HR from './pages/HR';
 
 const roleAccess = {
   ADMIN: [
@@ -63,7 +65,8 @@ function App() {
           <Route path="/pharmacy" element={<PrivateRoute path="/pharmacy"><Pharmacy /></PrivateRoute>} />
           <Route path="/inpatient" element={<PrivateRoute path="/inpatient"><Inpatient /></PrivateRoute>} />
           <Route path="/staff" element={<PrivateRoute path="/staff"><Staff /></PrivateRoute>} />
-
+          <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
+          <Route path="/hr" element={<PrivateRoute><HR /></PrivateRoute>} />
           <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>

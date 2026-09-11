@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard, Users, Stethoscope, CalendarDays, ClipboardList,
-  CreditCard, FlaskConical, Pill, BedDouble, UserCog, LogOut
+  CreditCard, FlaskConical, Pill, BedDouble, UserCog, LogOut, FileText
 } from 'lucide-react';
 
 function Layout({ children }) {
@@ -16,13 +16,13 @@ function Layout({ children }) {
   };
 
   const roleAccess = {
-    ADMIN: ['/dashboard', '/patients', '/doctors', '/appointments', '/medical-records', '/bills', '/lab', '/pharmacy', '/inpatient', '/staff'],
+    ADMIN: ['/dashboard', '/patients', '/doctors', '/appointments', '/medical-records', '/bills', '/lab', '/pharmacy', '/inpatient', '/staff', '/reports', '/hr'],
     DOCTOR: ['/dashboard', '/patients', '/appointments', '/medical-records', '/lab', '/inpatient'],
     RECEPTIONIST: ['/dashboard', '/patients', '/appointments', '/bills', '/inpatient'],
     NURSE: ['/dashboard', '/patients', '/appointments', '/medical-records', '/inpatient'],
     LAB_TECHNICIAN: ['/dashboard', '/lab'],
     PHARMACIST: ['/dashboard', '/pharmacy'],
-    ACCOUNTANT: ['/dashboard', '/bills'],
+    ACCOUNTANT: ['/dashboard', '/bills', '/reports'],
   };
 
   const menuItems = [
@@ -36,6 +36,8 @@ function Layout({ children }) {
     { path: '/pharmacy', label: 'Pharmacy', icon: Pill },
     { path: '/inpatient', label: 'Inpatient', icon: BedDouble },
     { path: '/staff', label: 'Staff', icon: UserCog },
+    { path: '/reports', label: 'Reports', icon: FileText },
+    { path: '/hr', label: 'HR', icon: UserCog },
   ];
 
   const allowedPaths = roleAccess[user?.role] || ['/dashboard'];
@@ -43,7 +45,7 @@ function Layout({ children }) {
 
   return (
     <div style={styles.container}>
-      <aside style={styles.sidebar}>
+      <aside className="no-print" style={styles.sidebar}>
         <div style={styles.brand}>
           <div style={styles.brandDot}></div>
           <div>
@@ -89,7 +91,7 @@ function Layout({ children }) {
         </button>
       </aside>
 
-      <main style={styles.main}>
+      <main className="print-area" style={styles.main}>
         <div style={styles.mainInner}>{children}</div>
       </main>
     </div>
@@ -98,22 +100,22 @@ function Layout({ children }) {
 
 const styles = {
   container: {
-  display: 'flex',
-  minHeight: '100vh',
-  background: 'linear-gradient(135deg, #fff7ed 0%, #ecfdf5 45%, #f8fafc 100%)',
-},
-sidebar: {
-  width: 250,
-  background: '#ffffff',
-  borderRight: '1px solid #e7e5e4',
-  padding: 16,
-  display: 'flex',
-  flexDirection: 'column',
-  height: '100vh',
-  position: 'sticky',
-  top: 0,
-  overflow: 'hidden',
-},
+    display: 'flex',
+    minHeight: '100vh',
+    background: 'linear-gradient(135deg, #fff7ed 0%, #ecfdf5 45%, #f8fafc 100%)',
+  },
+  sidebar: {
+    width: 250,
+    background: '#ffffff',
+    borderRight: '1px solid #e7e5e4',
+    padding: 16,
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100vh',
+    position: 'sticky',
+    top: 0,
+    overflow: 'hidden',
+  },
   brand: {
     display: 'flex',
     alignItems: 'center',
@@ -131,15 +133,15 @@ sidebar: {
   },
   brandTitle: { fontWeight: 700, color: '#0f766e' },
   brandSub: { fontSize: 12, color: '#94a3b8' },
-nav: {
-  flex: 1,
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 4,
-  overflowY: 'auto',
-  minHeight: 0,
-  paddingRight: 4,
-},
+  nav: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+    overflowY: 'auto',
+    minHeight: 0,
+    paddingRight: 4,
+  },
   navItem: {
     display: 'flex',
     alignItems: 'center',
