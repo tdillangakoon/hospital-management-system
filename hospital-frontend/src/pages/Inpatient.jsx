@@ -10,6 +10,7 @@ function Inpatient() {
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('admissions');
+  const [search, setSearch] = useState('');
 
   const [showWardForm, setShowWardForm] = useState(false);
   const [showBedForm, setShowBedForm] = useState(false);
@@ -162,12 +163,40 @@ function Inpatient() {
     }
   };
 
+  const filteredAdmissions = admissions.filter((a) => {
+    const q = search.toLowerCase();
+    return (
+      a.patient?.name?.toLowerCase().includes(q) ||
+      a.bed?.bedNumber?.toLowerCase().includes(q) ||
+      a.bed?.ward?.name?.toLowerCase().includes(q) ||
+      a.reason?.toLowerCase().includes(q) ||
+      a.status?.toLowerCase().includes(q)
+    );
+  });
+
+  const filteredBeds = beds.filter((b) => {
+    const q = search.toLowerCase();
+    return (
+      b.bedNumber?.toLowerCase().includes(q) ||
+      b.ward?.name?.toLowerCase().includes(q) ||
+      b.status?.toLowerCase().includes(q)
+    );
+  });
+
+  const filteredWards = wards.filter((w) => {
+    const q = search.toLowerCase();
+    return (
+      w.name?.toLowerCase().includes(q) ||
+      w.description?.toLowerCase().includes(q)
+    );
+  });
+
   return (
     <Layout>
       <div style={styles.header}>
         <div>
           <h1 style={styles.title}>Inpatient</h1>
-          <p style={styles.subtitle}>Manage wards, beds and patient admissions</p>
+          <p style={styles.subtitle}>Manage wards, beds and admissions</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => setTab('admissions')} style={tab === 'admissions' ? styles.activeTab : styles.tab}>Admissions</button>
@@ -262,6 +291,14 @@ function Inpatient() {
           )}
 
           <div style={styles.card}>
+            <input
+              type="text"
+              placeholder="Search admissions by patient, bed, ward, status..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={styles.search}
+            />
+
             {loading ? (
               <p>Loading...</p>
             ) : (
@@ -279,14 +316,14 @@ function Inpatient() {
                     </tr>
                   </thead>
                   <tbody>
-                    {admissions.length === 0 ? (
+                    {filteredAdmissions.length === 0 ? (
                       <tr>
                         <td colSpan="7" style={{ padding: 20, textAlign: 'center', color: '#64748b' }}>
                           No admissions
                         </td>
                       </tr>
                     ) : (
-                      admissions.map((a) => (
+                      filteredAdmissions.map((a) => (
                         <tr key={a.id}>
                           <td style={styles.td}>{a.patient?.name}</td>
                           <td style={styles.td}>{a.bed?.bedNumber}</td>
@@ -295,9 +332,9 @@ function Inpatient() {
                           <td style={styles.td}>
                             <span style={{
                               ...styles.pill,
-                              background: a.status === 'ADMITTED' ? '#e0f2fe' : '#dcfce7',
-                              color: a.status === 'ADMITTED' ? '#0369a1' : '#15803d',
-                              border: a.status === 'ADMITTED' ? '1px solid #bae6fd' : '1px solid #bbf7d0',
+                              background: a.status === 'ADMITTED' ? '#fff7ed' : '#ecfdf5',
+                              color: a.status === 'ADMITTED' ? '#c2410c' : '#047857',
+                              border: a.status === 'ADMITTED' ? '1px solid #fed7aa' : '1px solid #a7f3d0',
                             }}>
                               {a.status}
                             </span>
@@ -348,6 +385,14 @@ function Inpatient() {
           )}
 
           <div style={styles.card}>
+            <input
+              type="text"
+              placeholder="Search beds by number, ward, status..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={styles.search}
+            />
+
             <div style={{ overflowX: 'auto' }}>
               <table style={styles.table}>
                 <thead>
@@ -358,16 +403,16 @@ function Inpatient() {
                   </tr>
                 </thead>
                 <tbody>
-                  {beds.map((b) => (
+                  {filteredBeds.map((b) => (
                     <tr key={b.id}>
                       <td style={styles.td}>{b.bedNumber}</td>
                       <td style={styles.td}>{b.ward?.name}</td>
                       <td style={styles.td}>
                         <span style={{
                           ...styles.pill,
-                          background: b.status === 'AVAILABLE' ? '#dcfce7' : '#fee2e2',
-                          color: b.status === 'AVAILABLE' ? '#15803d' : '#dc2626',
-                          border: b.status === 'AVAILABLE' ? '1px solid #bbf7d0' : '1px solid #fecaca',
+                          background: b.status === 'AVAILABLE' ? '#ecfdf5' : '#fff1f2',
+                          color: b.status === 'AVAILABLE' ? '#047857' : '#e11d48',
+                          border: b.status === 'AVAILABLE' ? '1px solid #a7f3d0' : '1px solid #fecdd3',
                         }}>
                           {b.status}
                         </span>
@@ -402,6 +447,14 @@ function Inpatient() {
           )}
 
           <div style={styles.card}>
+            <input
+              type="text"
+              placeholder="Search wards by name or description..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={styles.search}
+            />
+
             <div style={{ overflowX: 'auto' }}>
               <table style={styles.table}>
                 <thead>
@@ -412,7 +465,7 @@ function Inpatient() {
                   </tr>
                 </thead>
                 <tbody>
-                  {wards.map((w) => (
+                  {filteredWards.map((w) => (
                     <tr key={w.id}>
                       <td style={styles.td}>{w.name}</td>
                       <td style={styles.td}>{w.description || '-'}</td>
@@ -443,24 +496,11 @@ function Inpatient() {
 }
 
 const styles = {
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  title: {
-    margin: 0,
-    fontSize: 28,
-    color: '#0f172a',
-  },
-  subtitle: {
-    margin: '4px 0 0',
-    color: '#64748b',
-    fontSize: 14,
-  },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  title: { margin: 0, fontSize: 28, color: '#0f172a' },
+  subtitle: { margin: '4px 0 0', color: '#64748b', fontSize: 14 },
   primaryBtn: {
-    background: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
+    background: 'linear-gradient(135deg, #f59e0b, #fb923c)',
     color: 'white',
     border: 'none',
     padding: '10px 16px',
@@ -468,12 +508,12 @@ const styles = {
     cursor: 'pointer',
     fontSize: 14,
     fontWeight: 600,
-    boxShadow: '0 8px 18px rgba(14,165,233,0.25)',
+    boxShadow: '0 8px 18px rgba(245,158,11,0.25)',
   },
   editBtn: {
-    background: '#e0f2fe',
-    color: '#0369a1',
-    border: '1px solid #bae6fd',
+    background: '#ecfdf5',
+    color: '#0f766e',
+    border: '1px solid #a7f3d0',
     padding: '6px 10px',
     borderRadius: 8,
     cursor: 'pointer',
@@ -481,9 +521,9 @@ const styles = {
     fontWeight: 600,
   },
   dischargeBtn: {
-    background: '#dcfce7',
-    color: '#15803d',
-    border: '1px solid #bbf7d0',
+    background: '#ecfdf5',
+    color: '#047857',
+    border: '1px solid #a7f3d0',
     padding: '6px 10px',
     borderRadius: 8,
     cursor: 'pointer',
@@ -491,9 +531,9 @@ const styles = {
     fontWeight: 600,
   },
   deleteBtn: {
-    background: '#fee2e2',
-    color: '#dc2626',
-    border: '1px solid #fecaca',
+    background: '#fff1f2',
+    color: '#e11d48',
+    border: '1px solid #fecdd3',
     padding: '6px 10px',
     borderRadius: 8,
     cursor: 'pointer',
@@ -501,7 +541,7 @@ const styles = {
     fontWeight: 600,
   },
   cancelBtn: {
-    background: '#f1f5f9',
+    background: '#f8fafc',
     color: '#334155',
     border: '1px solid #e2e8f0',
     padding: '8px 14px',
@@ -510,9 +550,9 @@ const styles = {
     fontSize: 13,
   },
   tab: {
-    background: '#e0f2fe',
-    color: '#0369a1',
-    border: '1px solid #bae6fd',
+    background: '#fff7ed',
+    color: '#c2410c',
+    border: '1px solid #fed7aa',
     padding: '8px 14px',
     borderRadius: 10,
     cursor: 'pointer',
@@ -520,7 +560,7 @@ const styles = {
     fontSize: 13,
   },
   activeTab: {
-    background: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
+    background: 'linear-gradient(135deg, #f59e0b, #fb923c)',
     color: 'white',
     border: 'none',
     padding: '8px 14px',
@@ -530,81 +570,50 @@ const styles = {
     fontSize: 13,
   },
   card: {
-    background: 'rgba(255,255,255,0.82)',
-    backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(255,255,255,0.9)',
+    background: '#ffffff',
+    border: '1px solid #ffedd5',
     borderRadius: 16,
     padding: 18,
     marginBottom: 18,
-    boxShadow: '0 10px 28px rgba(2,132,199,0.06)',
+    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.04)',
   },
-  cardTitle: {
-    marginTop: 0,
-    marginBottom: 14,
-    color: '#0f172a',
-  },
-  formGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 12,
-    marginBottom: 14,
-  },
+  cardTitle: { marginTop: 0, marginBottom: 14, color: '#0f172a' },
+  formGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 },
   input: {
     padding: '11px 12px',
-    border: '1px solid #dbeafe',
+    border: '1px solid #e2e8f0',
     borderRadius: 10,
     fontSize: 14,
-    background: 'rgba(255,255,255,0.95)',
+    background: '#fffdf9',
     outline: 'none',
   },
-  table: {
+  search: {
     width: '100%',
-    borderCollapse: 'collapse',
-    minWidth: 900,
+    maxWidth: 420,
+    marginBottom: 14,
+    padding: '11px 14px',
+    borderRadius: 10,
+    border: '1px solid #e2e8f0',
+    background: '#fffdf9',
+    outline: 'none',
   },
+  table: { width: '100%', borderCollapse: 'collapse', minWidth: 900 },
   th: {
     textAlign: 'left',
     padding: '12px 14px',
-    background: '#f0f9ff',
+    background: '#fff7ed',
     fontSize: 12,
-    color: '#0369a1',
-    borderBottom: '1px solid #e0f2fe',
+    color: '#c2410c',
+    borderBottom: '1px solid #ffedd5',
     fontWeight: 700,
   },
-  td: {
-    padding: '12px 14px',
-    borderBottom: '1px solid #f1f5f9',
-    fontSize: 14,
-    color: '#0f172a',
-  },
-  pill: {
-    padding: '4px 8px',
-    borderRadius: 999,
-    fontSize: 12,
-    fontWeight: 600,
-  },
-  error: {
-    background: '#fef2f2',
-    color: '#dc2626',
-    border: '1px solid #fecaca',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 14,
-  },
-  success: {
-    background: '#ecfdf5',
-    color: '#059669',
-    border: '1px solid #a7f3d0',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 14,
-  },
+  td: { padding: '12px 14px', borderBottom: '1px solid #f8fafc', fontSize: 14, color: '#0f172a' },
+  pill: { padding: '4px 8px', borderRadius: 999, fontSize: 12, fontWeight: 600 },
+  error: { background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3', padding: 12, borderRadius: 10, marginBottom: 14 },
+  success: { background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', padding: 12, borderRadius: 10, marginBottom: 14 },
   overlay: {
     position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    inset: 0,
     background: 'rgba(15, 23, 42, 0.45)',
     display: 'flex',
     justifyContent: 'center',

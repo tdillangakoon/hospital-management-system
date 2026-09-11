@@ -12,6 +12,7 @@ function Laboratory() {
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [showTestForm, setShowTestForm] = useState(false);
   const [showResultForm, setShowResultForm] = useState(null);
+  const [search, setSearch] = useState('');
 
   const [requestForm, setRequestForm] = useState({
     patientId: '',
@@ -110,9 +111,29 @@ function Laboratory() {
   };
 
   const statusStyle = (status) => {
-    if (status === 'COMPLETED') return { bg: '#dcfce7', color: '#15803d', border: '#bbf7d0' };
-    return { bg: '#e0f2fe', color: '#0369a1', border: '#bae6fd' };
+    if (status === 'COMPLETED') return { bg: '#ecfdf5', color: '#047857', border: '#a7f3d0' };
+    return { bg: '#fff7ed', color: '#c2410c', border: '#fed7aa' };
   };
+
+  const filteredRequests = requests.filter((r) => {
+    const q = search.toLowerCase();
+    return (
+      r.patient?.name?.toLowerCase().includes(q) ||
+      r.test?.name?.toLowerCase().includes(q) ||
+      r.doctor?.user?.name?.toLowerCase().includes(q) ||
+      r.status?.toLowerCase().includes(q)
+    );
+  });
+
+  const filteredTests = tests.filter((t) => {
+    const q = search.toLowerCase();
+    return (
+      t.name?.toLowerCase().includes(q) ||
+      t.category?.toLowerCase().includes(q) ||
+      t.description?.toLowerCase().includes(q) ||
+      String(t.price).includes(q)
+    );
+  });
 
   return (
     <Layout>
@@ -217,6 +238,14 @@ function Laboratory() {
           )}
 
           <div style={styles.card}>
+            <input
+              type="text"
+              placeholder="Search requests by patient, test, doctor, status..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={styles.search}
+            />
+
             {loading ? (
               <p>Loading...</p>
             ) : (
@@ -233,14 +262,14 @@ function Laboratory() {
                     </tr>
                   </thead>
                   <tbody>
-                    {requests.length === 0 ? (
+                    {filteredRequests.length === 0 ? (
                       <tr>
                         <td colSpan="6" style={{ padding: 20, textAlign: 'center', color: '#64748b' }}>
                           No lab requests
                         </td>
                       </tr>
                     ) : (
-                      requests.map((r) => {
+                      filteredRequests.map((r) => {
                         const s = statusStyle(r.status);
                         return (
                           <tr key={r.id}>
@@ -264,7 +293,7 @@ function Laboratory() {
                                   Add Result
                                 </button>
                               ) : (
-                                <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>Result added</span>
+                                <span style={{ fontSize: 12, color: '#047857', fontWeight: 600 }}>Result added</span>
                               )}
                             </td>
                           </tr>
@@ -324,6 +353,14 @@ function Laboratory() {
           )}
 
           <div style={styles.card}>
+            <input
+              type="text"
+              placeholder="Search tests by name, category, price..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={styles.search}
+            />
+
             <div style={{ overflowX: 'auto' }}>
               <table style={styles.table}>
                 <thead>
@@ -335,7 +372,7 @@ function Laboratory() {
                   </tr>
                 </thead>
                 <tbody>
-                  {tests.map((t) => (
+                  {filteredTests.map((t) => (
                     <tr key={t.id}>
                       <td style={styles.td}>{t.name}</td>
                       <td style={styles.td}>{t.category || '-'}</td>
@@ -354,24 +391,11 @@ function Laboratory() {
 }
 
 const styles = {
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  title: {
-    margin: 0,
-    fontSize: 28,
-    color: '#0f172a',
-  },
-  subtitle: {
-    margin: '4px 0 0',
-    color: '#64748b',
-    fontSize: 14,
-  },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  title: { margin: 0, fontSize: 28, color: '#0f172a' },
+  subtitle: { margin: '4px 0 0', color: '#64748b', fontSize: 14 },
   primaryBtn: {
-    background: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
+    background: 'linear-gradient(135deg, #f59e0b, #fb923c)',
     color: 'white',
     border: 'none',
     padding: '10px 16px',
@@ -379,12 +403,12 @@ const styles = {
     cursor: 'pointer',
     fontSize: 14,
     fontWeight: 600,
-    boxShadow: '0 8px 18px rgba(14,165,233,0.25)',
+    boxShadow: '0 8px 18px rgba(245,158,11,0.25)',
   },
   editBtn: {
-    background: '#e0f2fe',
-    color: '#0369a1',
-    border: '1px solid #bae6fd',
+    background: '#ecfdf5',
+    color: '#0f766e',
+    border: '1px solid #a7f3d0',
     padding: '6px 10px',
     borderRadius: 8,
     cursor: 'pointer',
@@ -392,7 +416,7 @@ const styles = {
     fontWeight: 600,
   },
   cancelBtn: {
-    background: '#f1f5f9',
+    background: '#f8fafc',
     color: '#334155',
     border: '1px solid #e2e8f0',
     padding: '8px 14px',
@@ -401,16 +425,16 @@ const styles = {
     fontSize: 13,
   },
   tab: {
-    background: '#e0f2fe',
-    color: '#0369a1',
-    border: '1px solid #bae6fd',
+    background: '#fff7ed',
+    color: '#c2410c',
+    border: '1px solid #fed7aa',
     padding: '8px 14px',
     borderRadius: 10,
     cursor: 'pointer',
     fontWeight: 600,
   },
   activeTab: {
-    background: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
+    background: 'linear-gradient(135deg, #f59e0b, #fb923c)',
     color: 'white',
     border: 'none',
     padding: '8px 14px',
@@ -419,76 +443,48 @@ const styles = {
     fontWeight: 600,
   },
   card: {
-    background: 'rgba(255,255,255,0.82)',
-    backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(255,255,255,0.9)',
+    background: '#ffffff',
+    border: '1px solid #ffedd5',
     borderRadius: 16,
     padding: 18,
     marginBottom: 18,
-    boxShadow: '0 10px 28px rgba(2,132,199,0.06)',
+    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.04)',
   },
-  cardTitle: {
-    marginTop: 0,
-    marginBottom: 14,
-    color: '#0f172a',
-  },
-  formGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 12,
-    marginBottom: 14,
-  },
+  cardTitle: { marginTop: 0, marginBottom: 14, color: '#0f172a' },
+  formGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 },
   input: {
     padding: '11px 12px',
-    border: '1px solid #dbeafe',
+    border: '1px solid #e2e8f0',
     borderRadius: 10,
     fontSize: 14,
-    background: 'rgba(255,255,255,0.95)',
+    background: '#fffdf9',
     outline: 'none',
     fontFamily: 'inherit',
   },
-  table: {
+  search: {
     width: '100%',
-    borderCollapse: 'collapse',
-    minWidth: 900,
+    maxWidth: 420,
+    marginBottom: 14,
+    padding: '11px 14px',
+    borderRadius: 10,
+    border: '1px solid #e2e8f0',
+    background: '#fffdf9',
+    outline: 'none',
   },
+  table: { width: '100%', borderCollapse: 'collapse', minWidth: 900 },
   th: {
     textAlign: 'left',
     padding: '12px 14px',
-    background: '#f0f9ff',
+    background: '#fff7ed',
     fontSize: 12,
-    color: '#0369a1',
-    borderBottom: '1px solid #e0f2fe',
+    color: '#c2410c',
+    borderBottom: '1px solid #ffedd5',
     fontWeight: 700,
   },
-  td: {
-    padding: '12px 14px',
-    borderBottom: '1px solid #f1f5f9',
-    fontSize: 14,
-    color: '#0f172a',
-  },
-  pill: {
-    padding: '4px 8px',
-    borderRadius: 999,
-    fontSize: 12,
-    fontWeight: 600,
-  },
-  error: {
-    background: '#fef2f2',
-    color: '#dc2626',
-    border: '1px solid #fecaca',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 14,
-  },
-  success: {
-    background: '#ecfdf5',
-    color: '#059669',
-    border: '1px solid #a7f3d0',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 14,
-  },
+  td: { padding: '12px 14px', borderBottom: '1px solid #f8fafc', fontSize: 14, color: '#0f172a' },
+  pill: { padding: '4px 8px', borderRadius: 999, fontSize: 12, fontWeight: 600 },
+  error: { background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3', padding: 12, borderRadius: 10, marginBottom: 14 },
+  success: { background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', padding: 12, borderRadius: 10, marginBottom: 14 },
 };
 
 export default Laboratory;
