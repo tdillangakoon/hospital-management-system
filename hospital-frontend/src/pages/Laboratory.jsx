@@ -13,6 +13,8 @@ function Laboratory() {
   const [showTestForm, setShowTestForm] = useState(false);
   const [showResultForm, setShowResultForm] = useState(null);
   const [search, setSearch] = useState('');
+  const [editingTestId, setEditingTestId] = useState(null);
+  const [deleteTestId, setDeleteTestId] = useState(null);
 
   const [requestForm, setRequestForm] = useState({
     patientId: '',
@@ -59,21 +61,59 @@ function Laboratory() {
     fetchData();
   }, []);
 
+  const resetTestForm = () => {
+    setTestForm({ name: '', description: '', price: '', category: '' });
+    setEditingTestId(null);
+    setShowTestForm(false);
+  };
+
   const handleCreateTest = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     try {
-      await api.post('/lab/tests', {
+      const payload = {
         ...testForm,
         price: parseFloat(testForm.price),
-      });
-      setSuccess('Lab test created');
-      setTestForm({ name: '', description: '', price: '', category: '' });
-      setShowTestForm(false);
+      };
+
+      if (editingTestId) {
+        await api.put(`/lab/tests/${editingTestId}`, payload);
+        setSuccess('Lab test updated');
+      } else {
+        await api.post('/lab/tests', payload);
+        setSuccess('Lab test created');
+      }
+
+      resetTestForm();
       fetchData();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create test');
+      setError(err.response?.data?.message || 'Failed to save test');
+    }
+  };
+
+  const handleEditTest = (t) => {
+    setTestForm({
+      name: t.name || '',
+      description: t.description || '',
+      price: t.price || '',
+      category: t.category || '',
+    });
+    setEditingTestId(t.id);
+    setShowTestForm(true);
+    setError('');
+    setSuccess('');
+  };
+
+  const confirmDeleteTest = async () => {
+    try {
+      await api.delete(`/lab/tests/${deleteTestId}`);
+      setSuccess('Lab test deleted');
+      setDeleteTestId(null);
+      fetchData();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete test');
+      setDeleteTestId(null);
     }
   };
 
@@ -311,14 +351,22 @@ function Laboratory() {
       {tab === 'tests' && (
         <>
           <div style={{ marginBottom: 14 }}>
-            <button onClick={() => setShowTestForm(!showTestForm)} style={styles.primaryBtn}>
+            <button
+              onClick={() => {
+                if (showTestForm) resetTestForm();
+                else setShowTestForm(true);
+              }}
+              style={styles.primaryBtn}
+            >
               {showTestForm ? 'Cancel' : '+ Add Lab Test'}
             </button>
           </div>
 
           {showTestForm && (
             <form onSubmit={handleCreateTest} style={styles.card}>
-              <h3 style={styles.cardTitle}>Add Lab Test</h3>
+              <h3 style={styles.cardTitle}>
+                {editingTestId ? 'Edit Lab Test' : 'Add Lab Test'}
+              </h3>
               <div style={styles.formGrid}>
                 <input
                   placeholder="Test Name *"
@@ -348,7 +396,9 @@ function Laboratory() {
                   style={styles.input}
                 />
               </div>
-              <button type="submit" style={styles.primaryBtn}>Save Test</button>
+              <button type="submit" style={styles.primaryBtn}>
+                {editingTestId ? 'Update Test' : 'Save Test'}
+              </button>
             </form>
           )}
 
@@ -369,22 +419,50 @@ function Laboratory() {
                     <th style={styles.th}>Category</th>
                     <th style={styles.th}>Price</th>
                     <th style={styles.th}>Description</th>
+                    <th style={styles.th}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredTests.map((t) => (
-                    <tr key={t.id}>
-                      <td style={styles.td}>{t.name}</td>
-                      <td style={styles.td}>{t.category || '-'}</td>
-                      <td style={styles.td}>Rs. {t.price}</td>
-                      <td style={styles.td}>{t.description || '-'}</td>
+                  {filteredTests.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" style={{ padding: 20, textAlign: 'center', color: '#64748b' }}>
+                        No lab tests found
+                      </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredTests.map((t) => (
+                      <tr key={t.id}>
+                        <td style={styles.td}>{t.name}</td>
+                        <td style={styles.td}>{t.category || '-'}</td>
+                        <td style={styles.td}>Rs. {t.price}</td>
+                        <td style={styles.td}>{t.description || '-'}</td>
+                        <td style={styles.td}>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button onClick={() => handleEditTest(t)} style={styles.editBtn}>Edit</button>
+                            <button onClick={() => setDeleteTestId(t.id)} style={styles.deleteBtn}>Delete</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
         </>
+      )}
+
+      {deleteTestId && (
+        <div style={styles.overlay}>
+          <div style={styles.modal}>
+            <h3 style={{ marginTop: 0 }}>Confirm Delete</h3>
+            <p style={{ color: '#64748b' }}>Delete this lab test?</p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+              <button onClick={() => setDeleteTestId(null)} style={styles.cancelBtn}>Cancel</button>
+              <button onClick={confirmDeleteTest} style={styles.deleteBtn}>Yes, Delete</button>
+            </div>
+          </div>
+        </div>
       )}
     </Layout>
   );
@@ -409,6 +487,16 @@ const styles = {
     background: '#ecfdf5',
     color: '#0f766e',
     border: '1px solid #a7f3d0',
+    padding: '6px 10px',
+    borderRadius: 8,
+    cursor: 'pointer',
+    fontSize: 12,
+    fontWeight: 600,
+  },
+  deleteBtn: {
+    background: '#fff1f2',
+    color: '#e11d48',
+    border: '1px solid #fecdd3',
     padding: '6px 10px',
     borderRadius: 8,
     cursor: 'pointer',
@@ -485,6 +573,22 @@ const styles = {
   pill: { padding: '4px 8px', borderRadius: 999, fontSize: 12, fontWeight: 600 },
   error: { background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3', padding: 12, borderRadius: 10, marginBottom: 14 },
   success: { background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', padding: 12, borderRadius: 10, marginBottom: 14 },
+  overlay: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(15, 23, 42, 0.45)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modal: {
+    background: 'white',
+    padding: 24,
+    borderRadius: 16,
+    width: '100%',
+    maxWidth: 400,
+  },
 };
 
 export default Laboratory;

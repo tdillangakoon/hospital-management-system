@@ -34,33 +34,39 @@ const getAllLabTests = async (req, res) => {
 
 const updateLabTest = async (req, res) => {
   try {
-    const { id } = req.params;
     const { name, description, price, category } = req.body;
 
     const test = await prisma.labTest.update({
-      where: { id },
+      where: { id: req.params.id },
       data: {
         name,
         description,
-        price: price ? parseFloat(price) : undefined,
+        price: price !== undefined ? parseFloat(price) : undefined,
         category,
       },
     });
 
-    res.json({ message: 'Lab test updated successfully', test });
+    res.json({ message: 'Lab test updated', test });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
 const deleteLabTest = async (req, res) => {
   try {
-    const { id } = req.params;
-    await prisma.labTest.delete({ where: { id } });
-    res.json({ message: 'Lab test deleted successfully' });
+    const used = await prisma.labRequest.findFirst({
+      where: { testId: req.params.id },
+    });
+
+    if (used) {
+      return res.status(400).json({
+        message: 'Cannot delete test because it is used in lab requests',
+      });
+    }
+
+    await prisma.labTest.delete({ where: { id: req.params.id } });
+    res.json({ message: 'Lab test deleted' });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
