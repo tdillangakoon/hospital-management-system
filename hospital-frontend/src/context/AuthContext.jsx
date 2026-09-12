@@ -13,10 +13,10 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const login = (userData, token) => {
+  const login = (userData, authToken) => {
     setUser(userData);
-    setToken(token);
-    localStorage.setItem('token', token);
+    setToken(authToken);
+    localStorage.setItem('token', authToken);
     localStorage.setItem('user', JSON.stringify(userData));
   };
 
@@ -26,6 +26,33 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   };
+
+  // Auto logout after 30 minutes of inactivity
+  useEffect(() => {
+    if (!token) return;
+
+    const TIMEOUT = 30 * 60 * 1000; // 30 minutes
+    let timer;
+
+    const startTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        logout();
+        alert('Session expired due to inactivity. Please login again.');
+        window.location.href = '/login';
+      }, TIMEOUT);
+    };
+
+    startTimer();
+
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    events.forEach((event) => window.addEventListener(event, startTimer));
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach((event) => window.removeEventListener(event, startTimer));
+    };
+  }, [token]);
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout }}>

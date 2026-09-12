@@ -16,13 +16,13 @@ function Layout({ children }) {
   };
 
   const roleAccess = {
-    ADMIN: ['/dashboard', '/patients', '/doctors', '/appointments', '/medical-records', '/bills', '/lab', '/pharmacy', '/inpatient', '/staff', '/reports', '/hr'],
-    DOCTOR: ['/dashboard', '/patients', '/appointments', '/medical-records', '/lab', '/inpatient'],
-    RECEPTIONIST: ['/dashboard', '/patients', '/appointments', '/bills', '/inpatient'],
-    NURSE: ['/dashboard', '/patients', '/appointments', '/medical-records', '/inpatient'],
-    LAB_TECHNICIAN: ['/dashboard', '/lab'],
-    PHARMACIST: ['/dashboard', '/pharmacy'],
-    ACCOUNTANT: ['/dashboard', '/bills', '/reports'],
+    ADMIN: ['/dashboard', '/patients', '/doctors', '/appointments', '/medical-records', '/bills', '/lab', '/pharmacy', '/inpatient', '/staff', '/reports', '/hr', '/documents', '/change-password', '/audit', '/schedules'],
+    DOCTOR: ['/dashboard', '/patients', '/appointments', '/medical-records', '/lab', '/inpatient', '/documents', '/change-password', '/schedules'],
+    RECEPTIONIST: ['/dashboard', '/patients', '/appointments', '/bills', '/inpatient', '/documents', '/change-password', '/schedules'],
+    NURSE: ['/dashboard', '/patients', '/appointments', '/medical-records', '/inpatient', '/documents', '/change-password'],
+    LAB_TECHNICIAN: ['/dashboard', '/lab', '/change-password'],
+    PHARMACIST: ['/dashboard', '/pharmacy', '/change-password'],
+    ACCOUNTANT: ['/dashboard', '/bills', '/reports', '/change-password'],
   };
 
   const menuItems = [
@@ -38,6 +38,10 @@ function Layout({ children }) {
     { path: '/staff', label: 'Staff', icon: UserCog },
     { path: '/reports', label: 'Reports', icon: FileText },
     { path: '/hr', label: 'HR', icon: UserCog },
+    { path: '/documents', label: 'Documents', icon: FileText },
+    { path: '/change-password', label: 'Password', icon: FileText },
+    { path: '/audit', label: 'Audit Logs', icon: FileText },
+    { path: '/schedules', label: 'Schedules', icon: CalendarDays },
   ];
 
   const allowedPaths = roleAccess[user?.role] || ['/dashboard'];

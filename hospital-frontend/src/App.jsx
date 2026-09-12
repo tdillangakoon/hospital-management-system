@@ -13,6 +13,10 @@ import Inpatient from './pages/Inpatient';
 import Staff from './pages/Staff';
 import Reports from './pages/Reports';
 import HR from './pages/HR';
+import Documents from './pages/Documents';
+import ChangePassword from './pages/ChangePassword';
+import AuditLogs from './pages/AuditLogs';
+import Schedules from './pages/Schedules';
 
 const roleAccess = {
   ADMIN: [
@@ -26,13 +30,17 @@ const roleAccess = {
     '/pharmacy',
     '/inpatient',
     '/staff',
+    '/documents',
+    '/change-password',
+    '/audit',
+    '/schedules',
   ],
-  DOCTOR: ['/dashboard', '/patients', '/appointments', '/medical-records', '/lab', '/inpatient'],
-  RECEPTIONIST: ['/dashboard', '/patients', '/appointments', '/bills', '/inpatient'],
-  NURSE: ['/dashboard', '/patients', '/appointments', '/medical-records', '/inpatient'],
-  LAB_TECHNICIAN: ['/dashboard', '/lab'],
-  PHARMACIST: ['/dashboard', '/pharmacy'],
-  ACCOUNTANT: ['/dashboard', '/bills'],
+  DOCTOR: ['/dashboard', '/patients', '/appointments', '/medical-records', '/lab', '/inpatient', '/change-password', '/schedules',],
+  RECEPTIONIST: ['/dashboard', '/patients', '/appointments', '/bills', '/inpatient', '/change-password', '/schedules',],
+  NURSE: ['/dashboard', '/patients', '/appointments', '/medical-records', '/inpatient', '/change-password',],
+  LAB_TECHNICIAN: ['/dashboard', '/lab', '/change-password',],
+  PHARMACIST: ['/dashboard', '/pharmacy', '/change-password',],
+  ACCOUNTANT: ['/dashboard', '/bills', '/change-password',],
 };
 
 function PrivateRoute({ children, path }) {
@@ -65,8 +73,13 @@ function App() {
           <Route path="/pharmacy" element={<PrivateRoute path="/pharmacy"><Pharmacy /></PrivateRoute>} />
           <Route path="/inpatient" element={<PrivateRoute path="/inpatient"><Inpatient /></PrivateRoute>} />
           <Route path="/staff" element={<PrivateRoute path="/staff"><Staff /></PrivateRoute>} />
-          <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
-          <Route path="/hr" element={<PrivateRoute><HR /></PrivateRoute>} />
+          <Route path="/reports" element={<PrivateRoute path="/reports"><Reports /></PrivateRoute>} />
+          <Route path="/hr" element={<PrivateRoute path="/hr"><HR /></PrivateRoute>} />
+          <Route path="/documents" element={<PrivateRoute path="/documents"><Documents /></PrivateRoute>} />
+          <Route path="/change-password" element={<PrivateRoute path="/change-password"><ChangePassword /></PrivateRoute>} />
+          <Route path="/audit" element={<PrivateRoute path="/audit"><AuditLogs /></PrivateRoute>} />
+          <Route path="/schedules" element={<PrivateRoute path="/schedules"><Schedules /></PrivateRoute>} />
+
           <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>

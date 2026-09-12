@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const prisma = require('../utils/prisma');
+const { logAction } = require('../utils/audit');
 
 const register = async (req, res) => {
   try {
@@ -25,6 +26,14 @@ const register = async (req, res) => {
       },
     });
 
+    await logAction({
+      userId: user.id,
+      action: 'REGISTER',
+      module: 'AUTH',
+      details: `${user.email} registered`,
+      ipAddress: req.ip,
+    });
+
     res.status(201).json({
       message: 'User registered successfully',
       user: {
@@ -40,7 +49,6 @@ const register = async (req, res) => {
   }
 };
 
-// Login
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -65,6 +73,14 @@ const login = async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    await logAction({
+      userId: user.id,
+      action: 'LOGIN',
+      module: 'AUTH',
+      details: `${user.email} logged in`,
+      ipAddress: req.ip,
+    });
+
     res.json({
       message: 'Login successful',
       token,
@@ -81,4 +97,48 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { register, login };
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Current and new password are required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) {
+      return res.status(400).json({ message: 'Current password is incorrect' });
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashed },
+    });
+
+    await logAction({
+      userId: user.id,
+      action: 'CHANGE_PASSWORD',
+      module: 'AUTH',
+      details: `${user.email} changed password`,
+      ipAddress: req.ip,
+    });
+
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+module.exports = {
+  register,
+  login,
+  changePassword,
+};
