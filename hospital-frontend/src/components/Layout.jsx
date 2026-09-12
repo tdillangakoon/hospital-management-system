@@ -16,7 +16,7 @@ function Layout({ children }) {
   };
 
   const roleAccess = {
-    ADMIN: ['/dashboard', '/patients', '/doctors', '/appointments', '/medical-records', '/bills', '/lab', '/pharmacy', '/inpatient', '/staff', '/reports', '/hr', '/documents', '/change-password', '/audit', '/schedules'],
+    ADMIN: ['/dashboard', '/patients', '/doctors', '/appointments', '/medical-records', '/bills', '/lab', '/pharmacy', '/inpatient', '/staff', '/reports', '/hr', '/documents', '/change-password', '/audit', '/schedules', '/backups'],
     DOCTOR: ['/dashboard', '/patients', '/appointments', '/medical-records', '/lab', '/inpatient', '/documents', '/change-password', '/schedules'],
     RECEPTIONIST: ['/dashboard', '/patients', '/appointments', '/bills', '/inpatient', '/documents', '/change-password', '/schedules'],
     NURSE: ['/dashboard', '/patients', '/appointments', '/medical-records', '/inpatient', '/documents', '/change-password'],
@@ -42,6 +42,7 @@ function Layout({ children }) {
     { path: '/change-password', label: 'Password', icon: FileText },
     { path: '/audit', label: 'Audit Logs', icon: FileText },
     { path: '/schedules', label: 'Schedules', icon: CalendarDays },
+    { path: '/backups', label: 'Backups', icon: FileText },
   ];
 
   const allowedPaths = roleAccess[user?.role] || ['/dashboard'];

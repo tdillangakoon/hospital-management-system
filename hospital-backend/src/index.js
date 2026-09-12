@@ -19,6 +19,8 @@ const path = require('path');
 const documentRoutes = require('./routes/documentRoutes');
 const auditRoutes = require('./routes/auditRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
+const backupRoutes = require('./routes/backupRoutes');
+const { startBackupJobs } = require('./jobs/backupJobs');
 
 const app = express();
 
@@ -42,6 +44,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/documents', documentRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/schedules', scheduleRoutes);
+app.use('/api/backups', backupRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Hospital Management System API is running' });
@@ -52,3 +55,5 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
+startBackupJobs();
