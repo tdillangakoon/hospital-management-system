@@ -19,28 +19,13 @@ import AuditLogs from './pages/AuditLogs';
 import Schedules from './pages/Schedules';
 
 const roleAccess = {
-  ADMIN: [
-    '/dashboard',
-    '/patients',
-    '/doctors',
-    '/appointments',
-    '/medical-records',
-    '/bills',
-    '/lab',
-    '/pharmacy',
-    '/inpatient',
-    '/staff',
-    '/documents',
-    '/change-password',
-    '/audit',
-    '/schedules',
-  ],
-  DOCTOR: ['/dashboard', '/patients', '/appointments', '/medical-records', '/lab', '/inpatient', '/change-password', '/schedules',],
-  RECEPTIONIST: ['/dashboard', '/patients', '/appointments', '/bills', '/inpatient', '/change-password', '/schedules',],
-  NURSE: ['/dashboard', '/patients', '/appointments', '/medical-records', '/inpatient', '/change-password',],
-  LAB_TECHNICIAN: ['/dashboard', '/lab', '/change-password',],
-  PHARMACIST: ['/dashboard', '/pharmacy', '/change-password',],
-  ACCOUNTANT: ['/dashboard', '/bills', '/change-password',],
+  ADMIN: ['/dashboard', '/patients', '/doctors', '/appointments', '/medical-records', '/bills', '/lab', '/pharmacy', '/inpatient', '/staff', '/reports', '/hr', '/documents', '/change-password', '/audit', '/schedules'],
+  DOCTOR: ['/dashboard', '/patients', '/appointments', '/medical-records', '/lab', '/inpatient', '/documents', '/change-password', '/schedules'],
+  RECEPTIONIST: ['/dashboard', '/patients', '/appointments', '/bills', '/inpatient', '/documents', '/change-password', '/schedules'],
+  NURSE: ['/dashboard', '/patients', '/appointments', '/medical-records', '/inpatient', '/documents', '/change-password'],
+  LAB_TECHNICIAN: ['/dashboard', '/lab', '/change-password'],
+  PHARMACIST: ['/dashboard', '/pharmacy', '/change-password'],
+  ACCOUNTANT: ['/dashboard', '/bills', '/reports', '/change-password'],
 };
 
 function PrivateRoute({ children, path }) {
