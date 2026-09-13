@@ -15,8 +15,38 @@ function Login() {
     e.preventDefault();
     setError('');
     setLoading(true);
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!email.trim()) {
+      setError('Email is required');
+      setLoading(false);
+      return;
+    }
+
+    if (!emailRegex.test(email.trim())) {
+      setError('Please enter a valid email address');
+      setLoading(false);
+      return;
+    }
+
+    if (!password) {
+      setError('Password is required');
+      setLoading(false);
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const res = await api.post('/auth/login', { email, password });
+      const res = await api.post('/auth/login', {
+        email: email.trim().toLowerCase(),
+        password,
+      });
       login(res.data.user, res.data.token);
       navigate('/dashboard');
     } catch (err) {
@@ -47,7 +77,6 @@ function Login() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
               placeholder="admin@hospital.com"
               style={styles.input}
             />
@@ -57,7 +86,6 @@ function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
               placeholder="••••••••"
               style={styles.input}
               autoComplete="current-password"
@@ -73,7 +101,7 @@ function Login() {
         <div style={styles.right}>
           <div style={styles.blob}>
             <img
-              src="/Hospital.png"              
+              src="/Hospital.png"
               alt="Hospital"
               style={styles.illustration}
             />
@@ -151,6 +179,7 @@ const styles = {
     border: '1px solid #e2e8f0',
     background: '#fffdf9',
     outline: 'none',
+    boxSizing: 'border-box',
   },
   button: {
     width: '100%',
@@ -179,26 +208,26 @@ const styles = {
     padding: 24,
   },
   blob: {
-  width: '100%',
-  maxWidth: 430,
-  height: 430,
-  background: 'linear-gradient(160deg, #99f6e4 0%, #5eead4 40%, #a5f3fc 100%)',
-  borderRadius: '42% 58% 48% 52% / 48% 42% 58% 52%',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  overflow: 'hidden',
-  padding: 28,
-  border: '5px solid #fdba74',
-  boxShadow: '0 20px 50px rgba(251, 146, 60, 0.45), 0 8px 20px rgba(251, 146, 60, 0.25)',
-},
-illustration: {
-  width: '100%',
-  height: '100%',
-  objectFit: 'contain',
-  objectPosition: 'center',
-  display: 'block',
-},
+    width: '100%',
+    maxWidth: 430,
+    height: 430,
+    background: 'linear-gradient(160deg, #99f6e4 0%, #5eead4 40%, #a5f3fc 100%)',
+    borderRadius: '42% 58% 48% 52% / 48% 42% 58% 52%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    padding: 28,
+    border: '5px solid #fdba74',
+    boxShadow: '0 20px 50px rgba(251, 146, 60, 0.45), 0 8px 20px rgba(251, 146, 60, 0.25)',
+  },
+  illustration: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain',
+    objectPosition: 'center',
+    display: 'block',
+  },
 };
 
 export default Login;

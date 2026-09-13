@@ -17,8 +17,8 @@ router.use(auth);
 
 router.post('/tests', authorize('ADMIN'), createLabTest);
 router.get('/tests', getAllLabTests);
-router.put('/tests/:id', authorize('ADMIN'), updateLabTest);
-router.delete('/tests/:id', authorize('ADMIN'), deleteLabTest);
+router.put('/tests/:id', authorize('ADMIN', 'LAB_TECHNICIAN'), updateLabTest);
+router.delete('/tests/:id', authorize('ADMIN', 'LAB_TECHNICIAN'), deleteLabTest);
 
 router.post('/requests', createLabRequest);
 router.get('/requests', getAllLabRequests);

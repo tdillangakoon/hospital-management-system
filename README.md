@@ -87,7 +87,9 @@ The main objectives of MediCare are to:
 - Role-Based Access Control (RBAC)
 - Password hashing using bcrypt
 - Password change functionality
+- Strong password policy for registration and password change
 - Automatic session timeout after 30 minutes of inactivity
+- JWT token expiry after 5 hours
 - Protected frontend routes
 - Protected backend API endpoints
 - Audit logging
@@ -167,7 +169,7 @@ Supported appointment statuses include:
 
 ## Laboratory Management
 
-- Manage laboratory tests
+- Manage laboratory tests (add, edit, delete)
 - Create laboratory requests
 - Manage sample collection
 - Track laboratory request status
@@ -547,10 +549,14 @@ Example:
 
 ```text
 Email: admin@hospital.com
-Password: Your configured password
+Password: Admin@123
 ```
 
-> The example credentials above are placeholders. Use the actual administrator credentials configured for your environment.
+> The example credentials above are placeholders. Use the actual administrator credentials configured for your environment. 
+> Use a strong password that includes uppercase, lowercase, number, and symbol.
+> If an older weak password exists, change it from the Password page.
+
+
 
 ---
 
@@ -598,12 +604,24 @@ MediCare implements multiple security mechanisms.
 - Protected API endpoints
 - Token validation
 - Secure login and logout
+- JWT tokens expire after 5 hours
 
 ## Password Security
 
-- Passwords are hashed using bcrypt.
-- Passwords are never stored as plain text.
-- Users can change their passwords.
+- Passwords are hashed using bcrypt
+- Passwords are never stored as plain text
+- Users can change their passwords
+- Strong password policy is enforced for registration and password changes:
+  - At least 8 characters
+  - Uppercase and lowercase letters
+  - At least one number
+  - At least one symbol (`@$!%*?&#`)
+
+Example valid password:
+
+```text
+Admin@123
+```
 
 ## Authorization
 

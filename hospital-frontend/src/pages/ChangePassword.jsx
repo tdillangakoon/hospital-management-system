@@ -17,13 +17,23 @@ function ChangePassword() {
     confirm: false,
   });
 
+  const strongPasswordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    if (form.newPassword.length < 6) {
-      setError('New password must be at least 6 characters');
+    if (!form.currentPassword || !form.newPassword || !form.confirmPassword) {
+      setError('All fields are required');
+      return;
+    }
+
+    if (!strongPasswordRegex.test(form.newPassword)) {
+      setError(
+        'Password must be at least 8 characters and include uppercase, lowercase, number, and symbol'
+      );
       return;
     }
 
@@ -61,18 +71,18 @@ function ChangePassword() {
 
           <div style={styles.content}>
             <div style={styles.tipsCard}>
-              <h3 style={styles.tipsTitle}>Password tips</h3>
+              <h3 style={styles.tipsTitle}>Password requirements</h3>
               <div style={styles.tipsGrid}>
-                <div style={styles.tipItem}>Use at least 6 characters</div>
-                <div style={styles.tipItem}>Mix letters and numbers</div>
-                <div style={styles.tipItem}>Don’t reuse old passwords</div>
-                <div style={styles.tipItem}>Never share your password</div>
+                <div style={styles.tipItem}>At least 8 characters</div>
+                <div style={styles.tipItem}>Uppercase + lowercase</div>
+                <div style={styles.tipItem}>At least one number</div>
+                <div style={styles.tipItem}>At least one symbol (@$!%*?&#)</div>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} style={styles.card}>
+            <form onSubmit={handleSubmit} style={styles.card} autoComplete="off">
               <h2 style={styles.cardTitle}>Update credentials</h2>
-              <p style={styles.cardSub}>Enter your current password and choose a new one.</p>
+              <p style={styles.cardSub}>Enter your current password and choose a strong new one.</p>
 
               {error && <div style={styles.error}>{error}</div>}
               {success && <div style={styles.success}>{success}</div>}
@@ -85,6 +95,7 @@ function ChangePassword() {
                   value={form.currentPassword}
                   onChange={(e) => setForm({ ...form, currentPassword: e.target.value })}
                   required
+                  autoComplete="current-password"
                   style={styles.input}
                 />
                 <button
@@ -100,10 +111,11 @@ function ChangePassword() {
               <div style={styles.inputWrap}>
                 <input
                   type={show.next ? 'text' : 'password'}
-                  placeholder="Enter new password"
+                  placeholder="Example: Admin@123"
                   value={form.newPassword}
                   onChange={(e) => setForm({ ...form, newPassword: e.target.value })}
                   required
+                  autoComplete="new-password"
                   style={styles.input}
                 />
                 <button
@@ -123,6 +135,7 @@ function ChangePassword() {
                   value={form.confirmPassword}
                   onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
                   required
+                  autoComplete="new-password"
                   style={styles.input}
                 />
                 <button
