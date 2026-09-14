@@ -1,4 +1,5 @@
 const prisma = require('../utils/prisma');
+const { logAction } = require('../utils/audit');
 
 const createLabTest = async (req, res) => {
   try {
@@ -11,6 +12,14 @@ const createLabTest = async (req, res) => {
         price: parseFloat(price),
         category,
       },
+    });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'CREATE',
+      module: 'LAB',
+      details: `Created lab test ${name}`,
+      ipAddress: req.ip,
     });
 
     res.status(201).json({ message: 'Lab test created successfully', test });
@@ -46,6 +55,14 @@ const updateLabTest = async (req, res) => {
       },
     });
 
+    await logAction({
+      userId: req.user?.id,
+      action: 'UPDATE',
+      module: 'LAB',
+      details: `Updated lab test ${req.params.id}`,
+      ipAddress: req.ip,
+    });
+
     res.json({ message: 'Lab test updated', test });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -63,6 +80,14 @@ const deleteLabTest = async (req, res) => {
         message: 'Cannot delete test because it is used in lab requests',
       });
     }
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'DELETE',
+      module: 'LAB',
+      details: `Deleted lab test ${req.params.id}`,
+      ipAddress: req.ip,
+    });
 
     await prisma.labTest.delete({ where: { id: req.params.id } });
     res.json({ message: 'Lab test deleted' });
@@ -94,6 +119,14 @@ const createLabRequest = async (req, res) => {
         },
         test: true,
       },
+    });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'CREATE',
+      module: 'LAB',
+      details: `Created lab request for patient ${patientId}`,
+      ipAddress: req.ip,
     });
 
     res.status(201).json({ message: 'Lab request created successfully', request });
@@ -138,6 +171,14 @@ const updateLabRequestStatus = async (req, res) => {
       },
     });
 
+    await logAction({
+      userId: req.user?.id,
+      action: 'UPDATE',
+      module: 'LAB',
+      details: `Updated lab request ${id} status to ${status}`,
+      ipAddress: req.ip,
+    });
+
     res.json({ message: 'Lab request status updated', request });
   } catch (error) {
     console.error(error);
@@ -164,6 +205,14 @@ const addLabResult = async (req, res) => {
     await prisma.labRequest.update({
       where: { id: labRequestId },
       data: { status: 'COMPLETED' },
+    });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'UPDATE',
+      module: 'LAB',
+      details: `Added lab result for request ${labRequestId}`,
+      ipAddress: req.ip,
     });
 
     res.status(201).json({

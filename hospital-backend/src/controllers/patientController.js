@@ -1,4 +1,5 @@
 const prisma = require('../utils/prisma');
+const { logAction } = require('../utils/audit');
 
 const createPatient = async (req, res) => {
   try {
@@ -14,6 +15,14 @@ const createPatient = async (req, res) => {
         address,
         bloodGroup,
       },
+    });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'CREATE',
+      module: 'PATIENT',
+      details: `Created patient ${patient.name}`,
+      ipAddress: req.ip,
     });
 
     res.status(201).json({
@@ -81,6 +90,14 @@ const updatePatient = async (req, res) => {
       },
     });
 
+    await logAction({
+      userId: req.user?.id,
+      action: 'UPDATE',
+      module: 'PATIENT',
+      details: `Updated patient ${patient.name || id}`,
+      ipAddress: req.ip,
+    });
+
     res.json({
       message: 'Patient updated successfully',
       patient,
@@ -97,6 +114,14 @@ const deletePatient = async (req, res) => {
 
     await prisma.patient.delete({
       where: { id },
+    });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'DELETE',
+      module: 'PATIENT',
+      details: `Deleted patient ${id}`,
+      ipAddress: req.ip,
     });
 
     res.json({ message: 'Patient deleted successfully' });

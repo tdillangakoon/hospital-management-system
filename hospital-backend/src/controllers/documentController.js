@@ -1,6 +1,7 @@
 const prisma = require('../utils/prisma');
 const path = require('path');
 const fs = require('fs');
+const { logAction } = require('../utils/audit');
 
 const uploadDocument = async (req, res) => {
   try {
@@ -26,6 +27,14 @@ const uploadDocument = async (req, res) => {
       include: {
         patient: { select: { id: true, name: true } },
       },
+    });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'CREATE',
+      module: 'DOCUMENT',
+      details: `Uploaded document for patient ${patientId}`,
+      ipAddress: req.ip,
     });
 
     res.status(201).json({
@@ -77,13 +86,20 @@ const deleteDocument = async (req, res) => {
       return res.status(404).json({ message: 'Document not found' });
     }
 
-    // remove file from disk if exists
     const filePath = path.join(__dirname, '../../', document.fileUrl.replace(/^\//, ''));
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
 
     await prisma.patientDocument.delete({ where: { id } });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'DELETE',
+      module: 'DOCUMENT',
+      details: `Deleted document ${id}`,
+      ipAddress: req.ip,
+    });
 
     res.json({ message: 'Document deleted successfully' });
   } catch (error) {

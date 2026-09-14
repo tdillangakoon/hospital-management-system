@@ -1,6 +1,6 @@
 const prisma = require('../utils/prisma');
+const { logAction } = require('../utils/audit');
 
-// Create Bill
 const createBill = async (req, res) => {
   try {
     const { patientId, amount, description } = req.body;
@@ -23,6 +23,14 @@ const createBill = async (req, res) => {
       },
     });
 
+    await logAction({
+      userId: req.user?.id,
+      action: 'CREATE',
+      module: 'BILLING',
+      details: `Created bill for patient ${patientId} amount ${amount}`,
+      ipAddress: req.ip,
+    });
+
     res.status(201).json({
       message: 'Bill created successfully',
       bill,
@@ -33,7 +41,6 @@ const createBill = async (req, res) => {
   }
 };
 
-// Get All Bills
 const getAllBills = async (req, res) => {
   try {
     const bills = await prisma.bill.findMany({
@@ -53,7 +60,6 @@ const getAllBills = async (req, res) => {
   }
 };
 
-// Get Bills by Patient
 const getBillsByPatient = async (req, res) => {
   try {
     const { patientId } = req.params;
@@ -73,7 +79,6 @@ const getBillsByPatient = async (req, res) => {
   }
 };
 
-// Get Single Bill
 const getBillById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -97,7 +102,6 @@ const getBillById = async (req, res) => {
   }
 };
 
-// Update Bill
 const updateBill = async (req, res) => {
   try {
     const { id } = req.params;
@@ -118,6 +122,14 @@ const updateBill = async (req, res) => {
       },
     });
 
+    await logAction({
+      userId: req.user?.id,
+      action: 'UPDATE',
+      module: 'BILLING',
+      details: `Updated bill ${id}`,
+      ipAddress: req.ip,
+    });
+
     res.json({
       message: 'Bill updated successfully',
       bill,
@@ -128,7 +140,6 @@ const updateBill = async (req, res) => {
   }
 };
 
-// Record Payment
 const recordPayment = async (req, res) => {
   try {
     const { billId } = req.params;
@@ -171,6 +182,14 @@ const recordPayment = async (req, res) => {
       },
     });
 
+    await logAction({
+      userId: req.user?.id,
+      action: 'PAYMENT',
+      module: 'BILLING',
+      details: `Recorded payment ${amount} for bill ${billId}`,
+      ipAddress: req.ip,
+    });
+
     res.json({
       message: 'Payment recorded successfully',
       payment,
@@ -182,7 +201,6 @@ const recordPayment = async (req, res) => {
   }
 };
 
-// Delete Bill
 const deleteBill = async (req, res) => {
   try {
     const { id } = req.params;
@@ -193,6 +211,14 @@ const deleteBill = async (req, res) => {
 
     await prisma.bill.delete({
       where: { id },
+    });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'DELETE',
+      module: 'BILLING',
+      details: `Deleted bill ${id}`,
+      ipAddress: req.ip,
     });
 
     res.json({ message: 'Bill deleted successfully' });

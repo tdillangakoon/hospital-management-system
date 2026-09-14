@@ -1,4 +1,5 @@
 const prisma = require('../utils/prisma');
+const { logAction } = require('../utils/audit');
 
 const createWard = async (req, res) => {
   try {
@@ -10,6 +11,14 @@ const createWard = async (req, res) => {
         description,
         totalBeds: parseInt(totalBeds) || 0,
       },
+    });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'CREATE',
+      module: 'INPATIENT',
+      details: `Created ward ${ward.name}`,
+      ipAddress: req.ip,
     });
 
     res.status(201).json({ message: 'Ward created successfully', ward });
@@ -32,6 +41,61 @@ const getAllWards = async (req, res) => {
   }
 };
 
+const updateWard = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, totalBeds } = req.body;
+
+    const ward = await prisma.ward.update({
+      where: { id },
+      data: {
+        name,
+        description,
+        totalBeds: totalBeds !== undefined ? parseInt(totalBeds) : undefined,
+      },
+    });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'UPDATE',
+      module: 'INPATIENT',
+      details: `Updated ward ${ward.name}`,
+      ipAddress: req.ip,
+    });
+
+    res.json({ message: 'Ward updated successfully', ward });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+const deleteWard = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const beds = await prisma.bed.count({ where: { wardId: id } });
+    if (beds > 0) {
+      return res.status(400).json({
+        message: 'Cannot delete ward because it still has beds. Delete beds first.',
+      });
+    }
+
+    const ward = await prisma.ward.delete({ where: { id } });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'DELETE',
+      module: 'INPATIENT',
+      details: `Deleted ward ${ward.name}`,
+      ipAddress: req.ip,
+    });
+
+    res.json({ message: 'Ward deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 const createBed = async (req, res) => {
   try {
     const { wardId, bedNumber } = req.body;
@@ -43,6 +107,14 @@ const createBed = async (req, res) => {
         status: 'AVAILABLE',
       },
       include: { ward: true },
+    });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'CREATE',
+      module: 'INPATIENT',
+      details: `Created bed ${bed.bedNumber} in ward ${wardId}`,
+      ipAddress: req.ip,
     });
 
     res.status(201).json({ message: 'Bed created successfully', bed });
@@ -117,6 +189,14 @@ const admitPatient = async (req, res) => {
       }),
     ]);
 
+    await logAction({
+      userId: req.user?.id,
+      action: 'CREATE',
+      module: 'INPATIENT',
+      details: `Admitted patient ${patientId} to bed ${bedId}`,
+      ipAddress: req.ip,
+    });
+
     res.status(201).json({
       message: 'Patient admitted successfully',
       admission,
@@ -178,6 +258,14 @@ const dischargePatient = async (req, res) => {
       }),
     ]);
 
+    await logAction({
+      userId: req.user?.id,
+      action: 'UPDATE',
+      module: 'INPATIENT',
+      details: `Discharged admission ${id}`,
+      ipAddress: req.ip,
+    });
+
     res.json({
       message: 'Patient discharged successfully',
       admission: updatedAdmission,
@@ -200,6 +288,14 @@ const updateAdmission = async (req, res) => {
         patient: { select: { id: true, name: true, phone: true } },
         bed: { include: { ward: true } },
       },
+    });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'UPDATE',
+      module: 'INPATIENT',
+      details: `Updated admission ${id}`,
+      ipAddress: req.ip,
     });
 
     res.json({ message: 'Admission updated successfully', admission });
@@ -227,6 +323,14 @@ const deleteAdmission = async (req, res) => {
       }),
     ]);
 
+    await logAction({
+      userId: req.user?.id,
+      action: 'DELETE',
+      module: 'INPATIENT',
+      details: `Deleted admission ${id}`,
+      ipAddress: req.ip,
+    });
+
     res.json({ message: 'Admission deleted successfully' });
   } catch (error) {
     console.error(error);
@@ -237,6 +341,8 @@ const deleteAdmission = async (req, res) => {
 module.exports = {
   createWard,
   getAllWards,
+  updateWard,
+  deleteWard,
   createBed,
   getAllBeds,
   getAvailableBeds,

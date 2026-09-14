@@ -1,6 +1,6 @@
 const prisma = require('../utils/prisma');
+const { logAction } = require('../utils/audit');
 
-// ---------- ATTENDANCE ----------
 const markAttendance = async (req, res) => {
   try {
     const { staffId, date, checkIn, checkOut, status, notes } = req.body;
@@ -40,6 +40,14 @@ const markAttendance = async (req, res) => {
           },
         },
       },
+    });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'CREATE',
+      module: 'HR',
+      details: `Marked attendance for staff ${staffId}`,
+      ipAddress: req.ip,
     });
 
     res.status(201).json({ message: 'Attendance saved', attendance });
@@ -95,6 +103,14 @@ const updateAttendance = async (req, res) => {
       },
     });
 
+    await logAction({
+      userId: req.user?.id,
+      action: 'UPDATE',
+      module: 'HR',
+      details: `Updated attendance ${req.params.id}`,
+      ipAddress: req.ip,
+    });
+
     res.json({ message: 'Attendance updated', attendance });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -104,13 +120,21 @@ const updateAttendance = async (req, res) => {
 const deleteAttendance = async (req, res) => {
   try {
     await prisma.attendance.delete({ where: { id: req.params.id } });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'DELETE',
+      module: 'HR',
+      details: `Deleted attendance ${req.params.id}`,
+      ipAddress: req.ip,
+    });
+
     res.json({ message: 'Attendance deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
-// ---------- LEAVE ----------
 const createLeave = async (req, res) => {
   try {
     const { staffId, leaveType, startDate, endDate, reason } = req.body;
@@ -135,6 +159,14 @@ const createLeave = async (req, res) => {
           },
         },
       },
+    });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'CREATE',
+      module: 'HR',
+      details: `Created leave request for staff ${staffId}`,
+      ipAddress: req.ip,
     });
 
     res.status(201).json({ message: 'Leave request created', leave });
@@ -180,6 +212,14 @@ const updateLeaveStatus = async (req, res) => {
       },
     });
 
+    await logAction({
+      userId: req.user?.id,
+      action: 'UPDATE',
+      module: 'HR',
+      details: `Updated leave ${req.params.id} status to ${status}`,
+      ipAddress: req.ip,
+    });
+
     res.json({ message: 'Leave status updated', leave });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -189,6 +229,15 @@ const updateLeaveStatus = async (req, res) => {
 const deleteLeave = async (req, res) => {
   try {
     await prisma.leave.delete({ where: { id: req.params.id } });
+
+await logAction({
+  userId: req.user?.id,
+  action: 'DELETE',
+  module: 'HR',
+  details: `Deleted leave ${req.params.id}`,
+  ipAddress: req.ip,
+});
+
     res.json({ message: 'Leave deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });

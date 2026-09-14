@@ -1,4 +1,5 @@
 const prisma = require('../utils/prisma');
+const { logAction } = require('../utils/audit');
 
 const createSchedule = async (req, res) => {
   try {
@@ -25,6 +26,14 @@ const createSchedule = async (req, res) => {
           },
         },
       },
+    });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'CREATE',
+      module: 'SCHEDULE',
+      details: `Created schedule for doctor ${doctorId}`,
+      ipAddress: req.ip,
     });
 
     res.status(201).json({ message: 'Schedule created', schedule });
@@ -73,6 +82,14 @@ const updateSchedule = async (req, res) => {
       },
     });
 
+    await logAction({
+      userId: req.user?.id,
+      action: 'UPDATE',
+      module: 'SCHEDULE',
+      details: `Updated schedule ${req.params.id}`,
+      ipAddress: req.ip,
+    });
+
     res.json({ message: 'Schedule updated', schedule });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -82,6 +99,15 @@ const updateSchedule = async (req, res) => {
 const deleteSchedule = async (req, res) => {
   try {
     await prisma.doctorSchedule.delete({ where: { id: req.params.id } });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'DELETE',
+      module: 'SCHEDULE',
+      details: `Deleted schedule ${req.params.id}`,
+      ipAddress: req.ip,
+    });
+
     res.json({ message: 'Schedule deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });

@@ -1,5 +1,6 @@
 const prisma = require('../utils/prisma');
 const bcrypt = require('bcryptjs');
+const { logAction } = require('../utils/audit');
 
 const createDoctor = async (req, res) => {
   try {
@@ -32,6 +33,14 @@ const createDoctor = async (req, res) => {
       include: {
         doctor: true,
       },
+    });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'CREATE',
+      module: 'DOCTOR',
+      details: `Created doctor ${name}`,
+      ipAddress: req.ip,
     });
 
     res.status(201).json({
@@ -131,6 +140,14 @@ const updateDoctor = async (req, res) => {
       },
     });
 
+    await logAction({
+      userId: req.user?.id,
+      action: 'UPDATE',
+      module: 'DOCTOR',
+      details: `Updated doctor ${id}`,
+      ipAddress: req.ip,
+    });
+
     res.json({
       message: 'Doctor updated successfully',
       doctor,
@@ -155,6 +172,14 @@ const deleteDoctor = async (req, res) => {
 
     await prisma.user.delete({
       where: { id: doctor.userId },
+    });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'DELETE',
+      module: 'DOCTOR',
+      details: `Deleted doctor ${id}`,
+      ipAddress: req.ip,
     });
 
     res.json({ message: 'Doctor deleted successfully' });

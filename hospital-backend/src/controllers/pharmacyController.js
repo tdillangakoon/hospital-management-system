@@ -1,4 +1,5 @@
 const prisma = require('../utils/prisma');
+const { logAction } = require('../utils/audit');
 
 const createMedicine = async (req, res) => {
   try {
@@ -15,6 +16,14 @@ const createMedicine = async (req, res) => {
         expiryDate: expiryDate ? new Date(expiryDate) : null,
         manufacturer,
       },
+    });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'CREATE',
+      module: 'PHARMACY',
+      details: `Created medicine ${name}`,
+      ipAddress: req.ip,
     });
 
     res.status(201).json({ message: 'Medicine added successfully', medicine });
@@ -71,6 +80,14 @@ const updateMedicine = async (req, res) => {
       },
     });
 
+    await logAction({
+      userId: req.user?.id,
+      action: 'UPDATE',
+      module: 'PHARMACY',
+      details: `Updated medicine ${id}`,
+      ipAddress: req.ip,
+    });
+
     res.json({ message: 'Medicine updated successfully', medicine });
   } catch (error) {
     console.error(error);
@@ -82,6 +99,15 @@ const deleteMedicine = async (req, res) => {
   try {
     const { id } = req.params;
     await prisma.medicine.delete({ where: { id } });
+
+    await logAction({
+     userId: req.user?.id,
+     action: 'DELETE',
+     module: 'PHARMACY',
+     details: `Deleted medicine ${id}`,
+     ipAddress: req.ip,
+    });
+
     res.json({ message: 'Medicine deleted successfully' });
   } catch (error) {
     console.error(error);
@@ -131,6 +157,14 @@ const dispenseMedicine = async (req, res) => {
         },
       }),
     ]);
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'CREATE',
+      module: 'PHARMACY',
+      details: `Dispensed medicine to patient ${patientId}`,
+      ipAddress: req.ip,
+    });
 
     res.status(201).json({
       message: 'Medicine dispensed successfully',

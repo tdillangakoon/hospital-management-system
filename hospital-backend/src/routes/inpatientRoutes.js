@@ -3,6 +3,8 @@ const router = express.Router();
 const {
   createWard,
   getAllWards,
+  updateWard,
+  deleteWard,
   createBed,
   getAllBeds,
   getAvailableBeds,
@@ -18,6 +20,8 @@ router.use(auth);
 
 router.post('/wards', authorize('ADMIN'), createWard);
 router.get('/wards', getAllWards);
+router.put('/wards/:id', updateWard);
+router.delete('/wards/:id', deleteWard);
 
 router.post('/beds', authorize('ADMIN'), createBed);
 router.get('/beds', getAllBeds);

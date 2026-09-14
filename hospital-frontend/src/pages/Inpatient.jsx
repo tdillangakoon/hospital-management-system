@@ -16,7 +16,9 @@ function Inpatient() {
   const [showBedForm, setShowBedForm] = useState(false);
   const [showAdmitForm, setShowAdmitForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [editingWardId, setEditingWardId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [deleteWardId, setDeleteWardId] = useState(null);
 
   const [wardForm, setWardForm] = useState({ name: '', description: '', totalBeds: '' });
   const [bedForm, setBedForm] = useState({ wardId: '', bedNumber: '' });
@@ -70,21 +72,58 @@ function Inpatient() {
     setShowAdmitForm(false);
   };
 
-  const handleCreateWard = async (e) => {
+  const resetWardForm = () => {
+    setWardForm({ name: '', description: '', totalBeds: '' });
+    setEditingWardId(null);
+    setShowWardForm(false);
+  };
+
+  const handleCreateOrUpdateWard = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     try {
-      await api.post('/inpatient/wards', {
+      const payload = {
         ...wardForm,
         totalBeds: parseInt(wardForm.totalBeds) || 0,
-      });
-      setSuccess('Ward created');
-      setWardForm({ name: '', description: '', totalBeds: '' });
-      setShowWardForm(false);
+      };
+
+      if (editingWardId) {
+        await api.put(`/inpatient/wards/${editingWardId}`, payload);
+        setSuccess('Ward updated successfully');
+      } else {
+        await api.post('/inpatient/wards', payload);
+        setSuccess('Ward created successfully');
+      }
+
+      resetWardForm();
       fetchData();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create ward');
+      setError(err.response?.data?.message || 'Failed to save ward');
+    }
+  };
+
+  const handleEditWard = (ward) => {
+    setWardForm({
+      name: ward.name || '',
+      description: ward.description || '',
+      totalBeds: ward.totalBeds != null ? String(ward.totalBeds) : '',
+    });
+    setEditingWardId(ward.id);
+    setShowWardForm(true);
+    setError('');
+    setSuccess('');
+  };
+
+  const confirmDeleteWard = async () => {
+    try {
+      await api.delete(`/inpatient/wards/${deleteWardId}`);
+      setSuccess('Ward deleted successfully');
+      setDeleteWardId(null);
+      fetchData();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete ward');
+      setDeleteWardId(null);
     }
   };
 
@@ -332,9 +371,9 @@ function Inpatient() {
                           <td style={styles.td}>
                             <span style={{
                               ...styles.pill,
-                              background: a.status === 'ADMITTED' ? '#fff7ed' : '#ecfdf5',
-                              color: a.status === 'ADMITTED' ? '#c2410c' : '#047857',
-                              border: a.status === 'ADMITTED' ? '1px solid #fed7aa' : '1px solid #a7f3d0',
+                              background: a.status === 'ADMITTED' ? '#fff1f2' : '#ecfdf5',
+                              color: a.status === 'ADMITTED' ? '#be123c' : '#047857',
+                              border: a.status === 'ADMITTED' ? '1px solid #fecdd3' : '1px solid #a7f3d0',
                             }}>
                               {a.status}
                             </span>
@@ -429,20 +468,45 @@ function Inpatient() {
       {tab === 'wards' && (
         <>
           <div style={{ marginBottom: 14 }}>
-            <button onClick={() => setShowWardForm(!showWardForm)} style={styles.primaryBtn}>
+            <button
+              onClick={() => {
+                if (showWardForm) resetWardForm();
+                else setShowWardForm(true);
+              }}
+              style={styles.primaryBtn}
+            >
               {showWardForm ? 'Cancel' : '+ Add Ward'}
             </button>
           </div>
 
           {showWardForm && (
-            <form onSubmit={handleCreateWard} style={styles.card}>
-              <h3 style={styles.cardTitle}>Add Ward</h3>
+            <form onSubmit={handleCreateOrUpdateWard} style={styles.card}>
+              <h3 style={styles.cardTitle}>{editingWardId ? 'Edit Ward' : 'Add Ward'}</h3>
               <div style={styles.formGrid}>
-                <input placeholder="Ward Name *" value={wardForm.name} onChange={(e) => setWardForm({ ...wardForm, name: e.target.value })} required style={styles.input} />
-                <input type="number" placeholder="Total Beds" value={wardForm.totalBeds} onChange={(e) => setWardForm({ ...wardForm, totalBeds: e.target.value })} style={styles.input} />
-                <input placeholder="Description" value={wardForm.description} onChange={(e) => setWardForm({ ...wardForm, description: e.target.value })} style={{ ...styles.input, gridColumn: '1 / -1' }} />
+                <input
+                  placeholder="Ward Name *"
+                  value={wardForm.name}
+                  onChange={(e) => setWardForm({ ...wardForm, name: e.target.value })}
+                  required
+                  style={styles.input}
+                />
+                <input
+                  type="number"
+                  placeholder="Total Beds"
+                  value={wardForm.totalBeds}
+                  onChange={(e) => setWardForm({ ...wardForm, totalBeds: e.target.value })}
+                  style={styles.input}
+                />
+                <input
+                  placeholder="Description"
+                  value={wardForm.description}
+                  onChange={(e) => setWardForm({ ...wardForm, description: e.target.value })}
+                  style={{ ...styles.input, gridColumn: '1 / -1' }}
+                />
               </div>
-              <button type="submit" style={styles.primaryBtn}>Save Ward</button>
+              <button type="submit" style={styles.primaryBtn}>
+                {editingWardId ? 'Update Ward' : 'Save Ward'}
+              </button>
             </form>
           )}
 
@@ -462,16 +526,35 @@ function Inpatient() {
                     <th style={styles.th}>Name</th>
                     <th style={styles.th}>Description</th>
                     <th style={styles.th}>Total Beds</th>
+                    <th style={styles.th}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredWards.map((w) => (
-                    <tr key={w.id}>
-                      <td style={styles.td}>{w.name}</td>
-                      <td style={styles.td}>{w.description || '-'}</td>
-                      <td style={styles.td}>{w.totalBeds}</td>
+                  {filteredWards.length === 0 ? (
+                    <tr>
+                      <td colSpan="4" style={{ padding: 20, textAlign: 'center', color: '#64748b' }}>
+                        No wards found
+                      </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredWards.map((w) => (
+                      <tr key={w.id}>
+                        <td style={styles.td}>{w.name}</td>
+                        <td style={styles.td}>{w.description || '-'}</td>
+                        <td style={styles.td}>{w.totalBeds}</td>
+                        <td style={styles.td}>
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            <button onClick={() => handleEditWard(w)} style={styles.editBtn}>
+                              Edit
+                            </button>
+                            <button onClick={() => setDeleteWardId(w.id)} style={styles.deleteBtn}>
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -487,6 +570,21 @@ function Inpatient() {
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
               <button onClick={() => setDeleteId(null)} style={styles.cancelBtn}>Cancel</button>
               <button onClick={confirmDelete} style={styles.deleteBtn}>Yes, Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteWardId && (
+        <div style={styles.overlay}>
+          <div style={styles.modal}>
+            <h3 style={{ marginTop: 0 }}>Confirm Delete Ward</h3>
+            <p style={{ color: '#64748b' }}>
+              Are you sure you want to delete this ward? Delete all beds in the ward first if delete fails.
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+              <button onClick={() => setDeleteWardId(null)} style={styles.cancelBtn}>Cancel</button>
+              <button onClick={confirmDeleteWard} style={styles.deleteBtn}>Yes, Delete</button>
             </div>
           </div>
         </div>

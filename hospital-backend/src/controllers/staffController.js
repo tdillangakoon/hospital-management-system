@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const prisma = require('../utils/prisma');
+const { logAction } = require('../utils/audit');
 
 const createStaff = async (req, res) => {
   try {
@@ -73,6 +74,14 @@ const createStaff = async (req, res) => {
       });
 
       return staff;
+    });
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'CREATE',
+      module: 'STAFF',
+      details: `Created staff ${name}`,
+      ipAddress: req.ip,
     });
 
     res.status(201).json({
@@ -199,6 +208,14 @@ const updateStaff = async (req, res) => {
       return staff;
     });
 
+    await logAction({
+      userId: req.user?.id,
+      action: 'UPDATE',
+      module: 'STAFF',
+      details: `Updated staff ${id}`,
+      ipAddress: req.ip,
+    });
+
     res.json({
       message: 'Staff updated successfully',
       staff: updated,
@@ -225,6 +242,14 @@ const deleteStaff = async (req, res) => {
       prisma.staff.delete({ where: { id } }),
       prisma.user.delete({ where: { id: staff.userId } }),
     ]);
+
+    await logAction({
+      userId: req.user?.id,
+      action: 'DELETE',
+      module: 'STAFF',
+      details: `Deleted staff ${id}`,
+      ipAddress: req.ip,
+    });
 
     res.json({ message: 'Staff deleted successfully' });
   } catch (error) {

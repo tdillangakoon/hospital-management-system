@@ -71,7 +71,6 @@ function Bills() {
   };
 
   const parseBillItems = (bill) => {
-    // New format: JSON array
     try {
       const parsed = JSON.parse(bill.description || '');
       if (Array.isArray(parsed) && parsed.length > 0) {
@@ -85,7 +84,6 @@ function Bills() {
       // continue to legacy parse
     }
 
-    // Old format: "Service A + Service B"
     const names = (bill.description || '')
       .split(' + ')
       .map((s) => s.trim())
@@ -114,6 +112,54 @@ function Bills() {
         price: names.length === 1 ? Number(bill.amount) || 0 : 0,
       };
     });
+  };
+
+  const printReceipt = (bill) => {
+    const itemsLabel = getBillLabel(bill.description);
+    const paid = (bill.payments || []).reduce((s, p) => s + Number(p.amount || 0), 0);
+    const balance = Number(bill.amount || 0) - paid;
+
+    const html = `
+      <html>
+        <head>
+          <title>Receipt - MediCare</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
+            h1 { margin: 0 0 4px; }
+            .sub { color: #666; margin-bottom: 18px; }
+            .box { border: 1px solid #ddd; border-radius: 10px; padding: 16px; }
+            .row { display: flex; justify-content: space-between; margin: 8px 0; gap: 12px; }
+            .total { font-size: 18px; font-weight: bold; margin-top: 12px; }
+          </style>
+        </head>
+        <body>
+          <h1>MediCare Hospital</h1>
+          <div class="sub">Payment Receipt</div>
+          <div class="box">
+            <div class="row"><span>Receipt ID</span><span>${bill.id.slice(0, 8).toUpperCase()}</span></div>
+            <div class="row"><span>Date</span><span>${new Date(bill.createdAt).toLocaleString()}</span></div>
+            <div class="row"><span>Patient</span><span>${bill.patient?.name || '-'}</span></div>
+            <div class="row"><span>Phone</span><span>${bill.patient?.phone || '-'}</span></div>
+            <div class="row"><span>Items</span><span>${itemsLabel}</span></div>
+            <div class="row"><span>Status</span><span>${bill.status}</span></div>
+            <div class="row total"><span>Total</span><span>Rs. ${Number(bill.amount || 0).toLocaleString()}</span></div>
+            <div class="row"><span>Paid</span><span>Rs. ${paid.toLocaleString()}</span></div>
+            <div class="row"><span>Balance</span><span>Rs. ${balance.toLocaleString()}</span></div>
+          </div>
+          <p style="margin-top:18px;color:#666;">Thank you for choosing MediCare.</p>
+          <script>window.print();</script>
+        </body>
+      </html>
+    `;
+
+    const win = window.open('', '_blank', 'width=800,height=900');
+    if (!win) {
+      setError('Please allow popups to print receipt');
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
   };
 
   const resetForm = () => {
@@ -198,7 +244,6 @@ function Bills() {
       return;
     }
 
-    // Save structured items so edit can rebuild each line
     const description = JSON.stringify(
       selectedItems.map((i) => ({
         id: i.id,
@@ -525,6 +570,9 @@ function Bills() {
                             <button onClick={() => handleEdit(b)} style={styles.editBtn}>
                               Edit
                             </button>
+                            <button onClick={() => printReceipt(b)} style={styles.printBtn}>
+                              Print
+                            </button>
                             <button onClick={() => setDeleteId(b.id)} style={styles.deleteBtn}>
                               Delete
                             </button>
@@ -590,6 +638,16 @@ const styles = {
     background: '#eff6ff',
     color: '#2563eb',
     border: '1px solid #bfdbfe',
+    padding: '6px 10px',
+    borderRadius: 8,
+    cursor: 'pointer',
+    fontSize: 12,
+    fontWeight: 600,
+  },
+  printBtn: {
+    background: '#f5f5f5',
+    color: '#111111',
+    border: '1px solid #ede6dc',
     padding: '6px 10px',
     borderRadius: 8,
     cursor: 'pointer',

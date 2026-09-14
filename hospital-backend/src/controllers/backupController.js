@@ -10,7 +10,7 @@ const runBackup = async (req, res) => {
 
     await logAction({
       userId: req.user?.id,
-      action: 'BACKUP',
+      action: 'CREATE',
       module: 'BACKUP',
       details: `Created ${type} backup: ${backup.fileName}`,
       ipAddress: req.ip,
