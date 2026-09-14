@@ -23,6 +23,7 @@
     "prisma": "^6.19.0"
   },
   "devDependencies": {
+    "autocannon": "^8.0.0",
     "nodemon": "^3.1.14"
   }
 }

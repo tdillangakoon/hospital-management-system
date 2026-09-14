@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import api from '../services/api';
 import Layout from '../components/Layout';
 
@@ -11,6 +11,9 @@ function Appointments() {
   const [editingId, setEditingId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [search, setSearch] = useState('');
+  const [viewMode, setViewMode] = useState('list'); // list | calendar
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDay, setSelectedDay] = useState(null);
 
   const [form, setForm] = useState({
     patientId: '',
@@ -123,9 +126,18 @@ function Appointments() {
   };
 
   const statusStyle = (status) => {
-    if (status === 'SCHEDULED') return { bg: '#fff7ed', color: '#c2410c', border: '#fed7aa' };
+    if (status === 'SCHEDULED') return { bg: '#fff1f2', color: '#be123c', border: '#fecdd3' };
     if (status === 'COMPLETED') return { bg: '#ecfdf5', color: '#047857', border: '#a7f3d0' };
-    return { bg: '#fff1f2', color: '#e11d48', border: '#fecdd3' };
+    if (status === 'CANCELLED') return { bg: '#f5f5f5', color: '#525252', border: '#e5e5e5' };
+    return { bg: '#fff7ed', color: '#c2410c', border: '#fed7aa' };
+  };
+
+  const toDateKey = (value) => {
+    const d = new Date(value);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   };
 
   const filteredAppointments = appointments.filter((a) => {
@@ -139,25 +151,80 @@ function Appointments() {
     );
   });
 
+  const calendarDays = useMemo(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startWeekday = firstDay.getDay();
+    const totalDays = lastDay.getDate();
+
+    const cells = [];
+    for (let i = 0; i < startWeekday; i++) cells.push(null);
+    for (let d = 1; d <= totalDays; d++) cells.push(new Date(year, month, d));
+    return cells;
+  }, [currentDate]);
+
+  const appointmentsByDay = useMemo(() => {
+    const map = {};
+    appointments.forEach((a) => {
+      const key = toDateKey(a.date);
+      if (!map[key]) map[key] = [];
+      map[key].push(a);
+    });
+    return map;
+  }, [appointments]);
+
+  const selectedDayAppointments = selectedDay
+    ? appointmentsByDay[toDateKey(selectedDay)] || []
+    : [];
+
+  const monthLabel = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  const openBookForDay = (day) => {
+    if (!day) return;
+    setSelectedDay(day);
+    setForm((prev) => ({
+      ...prev,
+      date: toDateKey(day),
+    }));
+    setShowForm(true);
+    setEditingId(null);
+  };
+
   return (
     <Layout>
       <div style={styles.header}>
         <div>
           <h1 style={styles.title}>Appointments</h1>
-          <p style={styles.subtitle}>Book and manage appointments</p>
+          <p style={styles.subtitle}>Book, manage and view appointments on calendar</p>
         </div>
-        <button
-          onClick={() => {
-            if (showForm) resetForm();
-            else {
-              setShowForm(true);
-              setEditingId(null);
-            }
-          }}
-          style={styles.primaryBtn}
-        >
-          {showForm ? 'Cancel' : '+ Book Appointment'}
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setViewMode('list')}
+            style={viewMode === 'list' ? styles.activeTab : styles.tab}
+          >
+            List View
+          </button>
+          <button
+            onClick={() => setViewMode('calendar')}
+            style={viewMode === 'calendar' ? styles.activeTab : styles.tab}
+          >
+            Calendar View
+          </button>
+          <button
+            onClick={() => {
+              if (showForm) resetForm();
+              else {
+                setShowForm(true);
+                setEditingId(null);
+              }
+            }}
+            style={styles.primaryBtn}
+          >
+            {showForm ? 'Cancel' : '+ Book Appointment'}
+          </button>
+        </div>
       </div>
 
       {error && <div style={styles.error}>{error}</div>}
@@ -205,79 +272,204 @@ function Appointments() {
         </form>
       )}
 
-      <div style={styles.card}>
-        <input
-          type="text"
-          placeholder="Search by patient, doctor, reason, status..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={styles.search}
-        />
-
-        {loading ? (
-          <p>Loading appointments...</p>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>Patient</th>
-                  <th style={styles.th}>Doctor</th>
-                  <th style={styles.th}>Date</th>
-                  <th style={styles.th}>Time</th>
-                  <th style={styles.th}>Reason</th>
-                  <th style={styles.th}>Status</th>
-                  <th style={styles.th}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAppointments.length === 0 ? (
-                  <tr>
-                    <td colSpan="7" style={{ padding: 20, textAlign: 'center', color: '#64748b' }}>
-                      No appointments found
-                    </td>
-                  </tr>
-                ) : (
-                  filteredAppointments.map((a) => {
-                    const s = statusStyle(a.status);
-                    return (
-                      <tr key={a.id}>
-                        <td style={styles.td}>{a.patient?.name}</td>
-                        <td style={styles.td}>{a.doctor?.user?.name}</td>
-                        <td style={styles.td}>{new Date(a.date).toLocaleDateString()}</td>
-                        <td style={styles.td}>{a.time}</td>
-                        <td style={styles.td}>{a.reason || '-'}</td>
-                        <td style={styles.td}>
-                          <span style={{
-                            ...styles.pill,
-                            background: s.bg,
-                            color: s.color,
-                            border: `1px solid ${s.border}`,
-                          }}>
-                            {a.status}
-                          </span>
-                        </td>
-                        <td style={styles.td}>
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                            <button onClick={() => handleEdit(a)} style={styles.editBtn}>Edit</button>
-                            {a.status === 'SCHEDULED' && (
-                              <>
-                                <button onClick={() => updateStatus(a.id, 'COMPLETED')} style={styles.completeBtn}>Complete</button>
-                                <button onClick={() => updateStatus(a.id, 'CANCELLED')} style={styles.cancelStatusBtn}>Cancel</button>
-                              </>
-                            )}
-                            <button onClick={() => setDeleteId(a.id)} style={styles.deleteBtn}>Delete</button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+      {viewMode === 'calendar' && (
+        <div style={styles.card}>
+          <div style={styles.calendarHeader}>
+            <button
+              type="button"
+              style={styles.monthBtn}
+              onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
+            >
+              ‹
+            </button>
+            <h3 style={{ margin: 0 }}>{monthLabel}</h3>
+            <button
+              type="button"
+              style={styles.monthBtn}
+              onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
+            >
+              ›
+            </button>
           </div>
-        )}
-      </div>
+
+          <div style={styles.weekRow}>
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+              <div key={d} style={styles.weekDay}>{d}</div>
+            ))}
+          </div>
+
+          <div style={styles.daysGrid}>
+            {calendarDays.map((day, idx) => {
+              if (!day) return <div key={`empty-${idx}`} style={styles.dayCellEmpty} />;
+
+              const key = toDateKey(day);
+              const dayApps = appointmentsByDay[key] || [];
+              const isSelected = selectedDay && toDateKey(selectedDay) === key;
+              const isToday = toDateKey(new Date()) === key;
+
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => openBookForDay(day)}
+                  style={{
+                    ...styles.dayCell,
+                    border: isSelected ? '2px solid #e11d48' : '1px solid #ede6dc',
+                    background: isToday ? '#fff1f2' : '#fff',
+                  }}
+                >
+                  <div style={styles.dayNumber}>{day.getDate()}</div>
+                  <div style={styles.dayCount}>
+                    {dayApps.length > 0 ? `${dayApps.length} appt` : ''}
+                  </div>
+                  <div style={styles.dotRow}>
+                    {dayApps.slice(0, 3).map((a) => (
+                      <span
+                        key={a.id}
+                        style={{
+                          ...styles.dot,
+                          background:
+                            a.status === 'COMPLETED'
+                              ? '#047857'
+                              : a.status === 'CANCELLED'
+                              ? '#a3a3a3'
+                              : '#e11d48',
+                        }}
+                      />
+                    ))}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {selectedDay && (
+            <div style={{ marginTop: 16 }}>
+              <h4 style={{ marginTop: 0 }}>
+                Appointments on {new Date(selectedDay).toLocaleDateString()}
+              </h4>
+              {selectedDayAppointments.length === 0 ? (
+                <p style={{ color: '#64748b' }}>No appointments on this day. Click the day to book.</p>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={styles.table}>
+                    <thead>
+                      <tr>
+                        <th style={styles.th}>Time</th>
+                        <th style={styles.th}>Patient</th>
+                        <th style={styles.th}>Doctor</th>
+                        <th style={styles.th}>Status</th>
+                        <th style={styles.th}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedDayAppointments.map((a) => {
+                        const s = statusStyle(a.status);
+                        return (
+                          <tr key={a.id}>
+                            <td style={styles.td}>{a.time}</td>
+                            <td style={styles.td}>{a.patient?.name}</td>
+                            <td style={styles.td}>{a.doctor?.user?.name}</td>
+                            <td style={styles.td}>
+                              <span style={{
+                                ...styles.pill,
+                                background: s.bg,
+                                color: s.color,
+                                border: `1px solid ${s.border}`,
+                              }}>
+                                {a.status}
+                              </span>
+                            </td>
+                            <td style={styles.td}>
+                              <button onClick={() => handleEdit(a)} style={styles.editBtn}>Edit</button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {viewMode === 'list' && (
+        <div style={styles.card}>
+          <input
+            type="text"
+            placeholder="Search by patient, doctor, reason, status..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={styles.search}
+          />
+
+          {loading ? (
+            <p>Loading appointments...</p>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Patient</th>
+                    <th style={styles.th}>Doctor</th>
+                    <th style={styles.th}>Date</th>
+                    <th style={styles.th}>Time</th>
+                    <th style={styles.th}>Reason</th>
+                    <th style={styles.th}>Status</th>
+                    <th style={styles.th}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredAppointments.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" style={{ padding: 20, textAlign: 'center', color: '#64748b' }}>
+                        No appointments found
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredAppointments.map((a) => {
+                      const s = statusStyle(a.status);
+                      return (
+                        <tr key={a.id}>
+                          <td style={styles.td}>{a.patient?.name}</td>
+                          <td style={styles.td}>{a.doctor?.user?.name}</td>
+                          <td style={styles.td}>{new Date(a.date).toLocaleDateString()}</td>
+                          <td style={styles.td}>{a.time}</td>
+                          <td style={styles.td}>{a.reason || '-'}</td>
+                          <td style={styles.td}>
+                            <span style={{
+                              ...styles.pill,
+                              background: s.bg,
+                              color: s.color,
+                              border: `1px solid ${s.border}`,
+                            }}>
+                              {a.status}
+                            </span>
+                          </td>
+                          <td style={styles.td}>
+                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                              <button onClick={() => handleEdit(a)} style={styles.editBtn}>Edit</button>
+                              {a.status === 'SCHEDULED' && (
+                                <>
+                                  <button onClick={() => updateStatus(a.id, 'COMPLETED')} style={styles.completeBtn}>Complete</button>
+                                  <button onClick={() => updateStatus(a.id, 'CANCELLED')} style={styles.cancelStatusBtn}>Cancel</button>
+                                </>
+                              )}
+                              <button onClick={() => setDeleteId(a.id)} style={styles.deleteBtn}>Delete</button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {deleteId && (
         <div style={styles.overlay}>
@@ -296,7 +488,7 @@ function Appointments() {
 }
 
 const styles = {
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, gap: 12, flexWrap: 'wrap' },
   title: { margin: 0, fontSize: 28, color: '#111111' },
   subtitle: { margin: '4px 0 0', color: '#64748b', fontSize: 14 },
   primaryBtn: {
@@ -309,6 +501,26 @@ const styles = {
     fontSize: 14,
     fontWeight: 600,
     boxShadow: '0 8px 18px rgba(225, 29, 72, 0.22)',
+  },
+  tab: {
+    background: '#fff1f2',
+    color: '#be123c',
+    border: '1px solid #fecdd3',
+    padding: '8px 14px',
+    borderRadius: 10,
+    cursor: 'pointer',
+    fontWeight: 600,
+    fontSize: 13,
+  },
+  activeTab: {
+    background: '#e11d48',
+    color: 'white',
+    border: 'none',
+    padding: '8px 14px',
+    borderRadius: 10,
+    cursor: 'pointer',
+    fontWeight: 600,
+    fontSize: 13,
   },
   editBtn: {
     background: '#eff6ff',
@@ -387,7 +599,7 @@ const styles = {
     background: '#fffdfb',
     outline: 'none',
   },
-  table: { width: '100%', borderCollapse: 'collapse', minWidth: 950 },
+  table: { width: '100%', borderCollapse: 'collapse', minWidth: 900 },
   th: {
     textAlign: 'left',
     padding: '12px 14px',
@@ -399,6 +611,38 @@ const styles = {
   },
   td: { padding: '12px 14px', borderBottom: '1px solid #f5f0ea', fontSize: 14, color: '#111111' },
   pill: { padding: '4px 8px', borderRadius: 999, fontSize: 12, fontWeight: 600 },
+  calendarHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  monthBtn: {
+    border: '1px solid #ede6dc',
+    background: '#fff1f2',
+    color: '#be123c',
+    borderRadius: 8,
+    width: 36,
+    height: 36,
+    cursor: 'pointer',
+    fontWeight: 700,
+    fontSize: 18,
+  },
+  weekRow: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6, marginBottom: 6 },
+  weekDay: { textAlign: 'center', fontSize: 12, color: '#94a3b8', fontWeight: 700 },
+  daysGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 },
+  dayCell: {
+    minHeight: 84,
+    borderRadius: 12,
+    padding: 8,
+    textAlign: 'left',
+    cursor: 'pointer',
+  },
+  dayCellEmpty: { minHeight: 84 },
+  dayNumber: { fontWeight: 700, color: '#111', marginBottom: 4 },
+  dayCount: { fontSize: 11, color: '#64748b', marginBottom: 6 },
+  dotRow: { display: 'flex', gap: 4, flexWrap: 'wrap' },
+  dot: { width: 8, height: 8, borderRadius: '50%', display: 'inline-block' },
   error: {
     background: '#fff1f2',
     color: '#e11d48',
@@ -408,9 +652,9 @@ const styles = {
     marginBottom: 14,
   },
   success: {
-    background: '#f5f5f5',
-    color: '#111111',
-    border: '1px solid #ede6dc',
+    background: '#ecfdf5',
+    color: '#047857',
+    border: '1px solid #a7f3d0',
     padding: 12,
     borderRadius: 10,
     marginBottom: 14,

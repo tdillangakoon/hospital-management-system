@@ -9,6 +9,27 @@ const createAppointment = async (req, res) => {
       return res.status(400).json({ message: 'patientId, doctorId, date and time are required' });
     }
 
+    // Prevent double-booking same doctor on same date + time
+    const dayStart = new Date(date);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(date);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const conflict = await prisma.appointment.findFirst({
+      where: {
+        doctorId,
+        time,
+        status: { in: ['SCHEDULED'] },
+        date: { gte: dayStart, lte: dayEnd },
+      },
+    });
+
+    if (conflict) {
+      return res.status(400).json({
+        message: 'Doctor already has an appointment at this date and time',
+      });
+    }
+
     const appointment = await prisma.appointment.create({
       data: {
         patientId,
@@ -109,7 +130,36 @@ const getAppointmentById = async (req, res) => {
 const updateAppointment = async (req, res) => {
   try {
     const { id } = req.params;
-    const { date, time, status, reason, notes } = req.body;
+    const { date, time, status, reason, notes, doctorId } = req.body;
+
+    // Optional: also block conflicts when rescheduling
+    if (date && time) {
+      const existing = await prisma.appointment.findUnique({ where: { id } });
+      const checkDoctorId = doctorId || existing?.doctorId;
+
+      if (checkDoctorId) {
+        const dayStart = new Date(date);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(date);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        const conflict = await prisma.appointment.findFirst({
+          where: {
+            id: { not: id },
+            doctorId: checkDoctorId,
+            time,
+            status: { in: ['SCHEDULED'] },
+            date: { gte: dayStart, lte: dayEnd },
+          },
+        });
+
+        if (conflict) {
+          return res.status(400).json({
+            message: 'Doctor already has an appointment at this date and time',
+          });
+        }
+      }
+    }
 
     const appointment = await prisma.appointment.update({
       where: { id },
