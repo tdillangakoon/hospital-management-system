@@ -55,14 +55,14 @@ function Dashboard() {
   }, []);
 
   const cards = [
-    { title: 'Total Patients', value: stats?.totalPatients ?? 0, icon: Users, color: '#ea580c', soft: '#fff7ed' },
-    { title: 'Total Doctors', value: stats?.totalDoctors ?? 0, icon: Stethoscope, color: '#0f766e', soft: '#ecfdf5' },
-    { title: 'Total Revenue', value: `Rs. ${(stats?.totalRevenue ?? 0).toLocaleString()}`, icon: Banknote, color: '#0284c7', soft: '#f0f9ff' },
-    { title: 'Available Beds', value: `${stats?.availableBeds ?? 0} / ${stats?.totalBeds ?? 0}`, icon: BedDouble, color: '#059669', soft: '#ecfdf5' },
-    { title: "Today's Appointments", value: stats?.todayAppointments ?? 0, icon: CalendarDays, color: '#d97706', soft: '#fffbeb' },
-    { title: 'Pending Lab Requests', value: stats?.pendingLabRequests ?? 0, icon: FlaskConical, color: '#7c3aed', soft: '#f5f3ff' },
+    { title: 'Total Patients', value: stats?.totalPatients ?? 0, icon: Users, color: '#e11d48', soft: '#fff1f2' },
+    { title: 'Total Doctors', value: stats?.totalDoctors ?? 0, icon: Stethoscope, color: '#111111', soft: '#f5f5f5' },
+    { title: 'Total Revenue', value: `Rs. ${(stats?.totalRevenue ?? 0).toLocaleString()}`, icon: Banknote, color: '#be123c', soft: '#fff1f2' },
+    { title: 'Available Beds', value: `${stats?.availableBeds ?? 0} / ${stats?.totalBeds ?? 0}`, icon: BedDouble, color: '#111111', soft: '#faf7f2' },
+    { title: "Today's Appointments", value: stats?.todayAppointments ?? 0, icon: CalendarDays, color: '#e11d48', soft: '#fff1f2' },
+    { title: 'Pending Lab Requests', value: stats?.pendingLabRequests ?? 0, icon: FlaskConical, color: '#111111', soft: '#f5f5f5' },
     { title: 'Unpaid Bills', value: stats?.unpaidBills ?? 0, icon: CreditCard, color: '#e11d48', soft: '#fff1f2' },
-    { title: 'Total Staff', value: stats?.totalStaff ?? 0, icon: UserCog, color: '#0369a1', soft: '#e0f2fe' },
+    { title: 'Total Staff', value: stats?.totalStaff ?? 0, icon: UserCog, color: '#111111', soft: '#faf7f2' },
   ];
 
   const weeklyData = [
@@ -87,7 +87,7 @@ function Dashboard() {
     { name: 'Available', value: stats?.availableBeds ?? 0 },
     { name: 'Occupied', value: Math.max((stats?.totalBeds ?? 0) - (stats?.availableBeds ?? 0), 0) },
   ];
-  const pieColors = ['#14b8a6', '#fb923c'];
+  const pieColors = ['#111111', '#e11d48'];
 
   const alerts = [
     {
@@ -101,22 +101,22 @@ function Dashboard() {
       title: 'Pending Lab Requests',
       value: stats?.pendingLabRequests ?? 0,
       note: 'Waiting for results',
-      color: '#7c3aed',
-      soft: '#f5f3ff',
+      color: '#111111',
+      soft: '#f5f5f5',
     },
     {
       title: 'Bed Availability',
       value: `${stats?.availableBeds ?? 0}/${stats?.totalBeds ?? 0}`,
       note: 'Current free beds',
-      color: '#0f766e',
-      soft: '#ecfdf5',
+      color: '#be123c',
+      soft: '#fff1f2',
     },
     {
       title: "Today's Load",
       value: stats?.todayAppointments ?? 0,
       note: 'Appointments scheduled today',
-      color: '#ea580c',
-      soft: '#fff7ed',
+      color: '#111111',
+      soft: '#faf7f2',
     },
   ];
 
@@ -133,6 +133,7 @@ function Dashboard() {
 
   const monthLabel = currentDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
   const today = new Date();
+
   const changeMonth = (offset) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1));
   };
@@ -173,19 +174,19 @@ function Dashboard() {
             <div style={styles.panel}>
               <div style={styles.panelHead}>
                 <h3 style={styles.panelTitle}>Weekly Activity</h3>
-                <Activity size={18} color="#ea580c" />
+                <Activity size={18} color="#e11d48" />
               </div>
               <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
                   <AreaChart data={weeklyData}>
                     <defs>
                       <linearGradient id="colorPatients" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#fb923c" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="#fb923c" stopOpacity={0.05} />
+                        <stop offset="5%" stopColor="#e11d48" stopOpacity={0.35} />
+                        <stop offset="95%" stopColor="#e11d48" stopOpacity={0.05} />
                       </linearGradient>
                       <linearGradient id="colorAppts" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.35} />
-                        <stop offset="95%" stopColor="#14b8a6" stopOpacity={0.05} />
+                        <stop offset="5%" stopColor="#111111" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#111111" stopOpacity={0.05} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -194,12 +195,12 @@ function Dashboard() {
                     <Tooltip
                       contentStyle={{
                         borderRadius: 12,
-                        border: '1px solid #ffedd5',
+                        border: '1px solid #ede6dc',
                         boxShadow: '0 8px 20px rgba(0,0,0,0.06)',
                       }}
                     />
-                    <Area type="monotone" dataKey="patients" stroke="#fb923c" fill="url(#colorPatients)" strokeWidth={3} />
-                    <Area type="monotone" dataKey="appts" stroke="#14b8a6" fill="url(#colorAppts)" strokeWidth={3} />
+                    <Area type="monotone" dataKey="patients" stroke="#e11d48" fill="url(#colorPatients)" strokeWidth={3} />
+                    <Area type="monotone" dataKey="appts" stroke="#111111" fill="url(#colorAppts)" strokeWidth={3} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -230,10 +231,10 @@ function Dashboard() {
                       key={idx}
                       style={{
                         ...styles.dayCell,
-                        background: isToday ? '#fff7ed' : 'transparent',
-                        color: isToday ? '#c2410c' : '#334155',
+                        background: isToday ? '#fff1f2' : 'transparent',
+                        color: isToday ? '#e11d48' : '#334155',
                         fontWeight: isToday ? 700 : 500,
-                        border: isToday ? '1px solid #fed7aa' : '1px solid transparent',
+                        border: isToday ? '1px solid #fecdd3' : '1px solid transparent',
                       }}
                     >
                       {day || ''}
@@ -256,10 +257,10 @@ function Dashboard() {
                     <Tooltip
                       contentStyle={{
                         borderRadius: 12,
-                        border: '1px solid #ffedd5',
+                        border: '1px solid #ede6dc',
                       }}
                     />
-                    <Bar dataKey="value" fill="#fb923c" radius={[10, 10, 0, 0]} />
+                    <Bar dataKey="value" fill="#e11d48" radius={[10, 10, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -287,8 +288,12 @@ function Dashboard() {
                 </ResponsiveContainer>
               </div>
               <div style={styles.legendRow}>
-                <span style={styles.legendItem}><i style={{ ...styles.dot, background: '#14b8a6' }} /> Available</span>
-                <span style={styles.legendItem}><i style={{ ...styles.dot, background: '#fb923c' }} /> Occupied</span>
+                <span style={styles.legendItem}>
+                  <i style={{ ...styles.dot, background: '#111111' }} /> Available
+                </span>
+                <span style={styles.legendItem}>
+                  <i style={{ ...styles.dot, background: '#e11d48' }} /> Occupied
+                </span>
               </div>
             </div>
           </div>
@@ -296,7 +301,7 @@ function Dashboard() {
           <div style={styles.panel}>
             <div style={styles.panelHead}>
               <h3 style={styles.panelTitle}>Needs Attention</h3>
-              <AlertTriangle size={18} color="#ea580c" />
+              <AlertTriangle size={18} color="#e11d48" />
             </div>
             <div style={styles.alertGrid}>
               {alerts.map((a) => (
@@ -325,33 +330,51 @@ const styles = {
     padding: '20px 22px',
     borderRadius: 18,
     background: '#ffffff',
-    border: '1px solid #ffedd5',
-    boxShadow: '0 10px 30px rgba(245, 158, 11, 0.08)',
+    border: '1px solid #ede6dc',
+    boxShadow: '0 10px 30px rgba(17, 24, 39, 0.05)',
   },
-  eyebrow: { fontSize: 12, letterSpacing: 0.8, textTransform: 'uppercase', color: '#ea580c', fontWeight: 700 },
-  title: { margin: '6px 0 0', fontSize: 30, color: '#0f172a' },
+  eyebrow: {
+    fontSize: 12,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: '#e11d48',
+    fontWeight: 700,
+  },
+  title: { margin: '6px 0 0', fontSize: 30, color: '#111111' },
   subtitle: { margin: '6px 0 0', color: '#64748b' },
   badge: {
-    background: 'linear-gradient(135deg, #f59e0b, #fb923c)',
+    background: '#e11d48',
     color: 'white',
     padding: '8px 12px',
     borderRadius: 999,
     fontSize: 12,
     fontWeight: 700,
   },
-  loading: { background: '#ffffff', borderRadius: 16, padding: 24, border: '1px solid #ffedd5' },
+  loading: {
+    background: '#ffffff',
+    borderRadius: 16,
+    padding: 24,
+    border: '1px solid #ede6dc',
+  },
   grid: { display: 'grid', gap: 16, marginBottom: 16 },
   card: {
     background: '#ffffff',
-    border: '1px solid #ffedd5',
+    border: '1px solid #ede6dc',
     borderRadius: 16,
     padding: 18,
-    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.04)',
+    boxShadow: '0 8px 24px rgba(17, 24, 39, 0.04)',
     minHeight: 120,
   },
-  iconWrap: { width: 38, height: 38, borderRadius: 11, display: 'grid', placeItems: 'center', marginBottom: 12 },
+  iconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    display: 'grid',
+    placeItems: 'center',
+    marginBottom: 12,
+  },
   label: { fontSize: 13, color: '#64748b', marginBottom: 8, fontWeight: 600 },
-  value: { fontSize: 24, fontWeight: 800 },
+  value: { fontSize: 24, fontWeight: 800, color: '#111111' },
   lowerGrid: {
     display: 'grid',
     gridTemplateColumns: '1.2fr 1fr',
@@ -360,19 +383,29 @@ const styles = {
   },
   panel: {
     background: '#ffffff',
-    border: '1px solid #ffedd5',
+    border: '1px solid #ede6dc',
     borderRadius: 16,
     padding: 18,
-    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.04)',
+    boxShadow: '0 8px 24px rgba(17, 24, 39, 0.04)',
     marginBottom: 16,
   },
-  panelHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  panelTitle: { margin: 0, fontSize: 16, color: '#0f172a' },
-  calendarHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  panelHead: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  panelTitle: { margin: 0, fontSize: 16, color: '#111111' },
+  calendarHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
   monthBtn: {
-    border: '1px solid #fed7aa',
-    background: '#fff7ed',
-    color: '#c2410c',
+    border: '1px solid #ede6dc',
+    background: '#fff1f2',
+    color: '#be123c',
     borderRadius: 8,
     width: 32,
     height: 32,
@@ -394,7 +427,7 @@ const styles = {
   },
   alertCard: { borderRadius: 14, padding: 14 },
   alertValue: { fontSize: 24, fontWeight: 800, marginBottom: 4 },
-  alertTitle: { fontWeight: 700, color: '#0f172a', marginBottom: 4 },
+  alertTitle: { fontWeight: 700, color: '#111111', marginBottom: 4 },
   alertNote: { fontSize: 12, color: '#64748b' },
 };
 

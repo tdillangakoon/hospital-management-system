@@ -59,7 +59,6 @@ function Login() {
   return (
     <div style={styles.page}>
       <div style={styles.shell}>
-        {/* LEFT FORM */}
         <div style={styles.left}>
           <div style={styles.brandRow}>
             <div style={styles.logoDot}></div>
@@ -97,12 +96,11 @@ function Login() {
           </form>
         </div>
 
-        {/* RIGHT MINT BLOB + IMAGE */}
         <div style={styles.right}>
           <div style={styles.blob}>
             <img
-              src="/Hospital.png"
-              alt="Hospital"
+              src="/Doctors.png"
+              alt="Doctors"
               style={styles.illustration}
             />
           </div>
@@ -118,7 +116,7 @@ const styles = {
     display: 'grid',
     placeItems: 'center',
     padding: 20,
-    background: 'linear-gradient(135deg, #fff7ed 0%, #ecfdf5 45%, #f0fdfa 100%)',
+    background: '#faf7f2',
   },
   shell: {
     width: '100%',
@@ -129,7 +127,8 @@ const styles = {
     background: '#ffffff',
     borderRadius: 28,
     overflow: 'hidden',
-    boxShadow: '0 18px 50px rgba(15, 23, 42, 0.08)',
+    boxShadow: '0 18px 50px rgba(17, 24, 39, 0.08)',
+    border: '1px solid #ede6dc',
   },
   left: {
     padding: '46px 40px',
@@ -147,18 +146,18 @@ const styles = {
     width: 14,
     height: 14,
     borderRadius: '50%',
-    background: '#f59e0b',
-    boxShadow: '0 0 0 6px rgba(245, 158, 11, 0.18)',
+    background: '#e11d48',
+    boxShadow: '0 0 0 6px rgba(225, 29, 72, 0.15)',
   },
   brand: {
     fontWeight: 700,
-    color: '#0f766e',
+    color: '#111111',
     fontSize: 15,
   },
   title: {
     margin: 0,
     fontSize: 34,
-    color: '#0f172a',
+    color: '#111111',
   },
   subtitle: {
     margin: '8px 0 26px',
@@ -176,8 +175,8 @@ const styles = {
     marginBottom: 14,
     padding: '13px 14px',
     borderRadius: 12,
-    border: '1px solid #e2e8f0',
-    background: '#fffdf9',
+    border: '1px solid #ede6dc',
+    background: '#fffdfb',
     outline: 'none',
     boxSizing: 'border-box',
   },
@@ -187,22 +186,22 @@ const styles = {
     padding: '13px 14px',
     border: 'none',
     borderRadius: 12,
-    background: 'linear-gradient(135deg, #f59e0b, #fb923c)',
+    background: '#e11d48',
     color: 'white',
     fontWeight: 700,
     cursor: 'pointer',
-    boxShadow: '0 10px 20px rgba(245, 158, 11, 0.25)',
+    boxShadow: '0 10px 20px rgba(225, 29, 72, 0.25)',
   },
   error: {
-    background: '#fef2f2',
-    color: '#dc2626',
-    border: '1px solid #fecaca',
+    background: '#fff1f2',
+    color: '#be123c',
+    border: '1px solid #fecdd3',
     padding: 10,
     borderRadius: 10,
     marginBottom: 12,
   },
   right: {
-    background: '#ffffff',
+    background: '#faf7f2',
     display: 'grid',
     placeItems: 'center',
     padding: 24,
@@ -211,15 +210,15 @@ const styles = {
     width: '100%',
     maxWidth: 430,
     height: 430,
-    background: 'linear-gradient(160deg, #99f6e4 0%, #5eead4 40%, #a5f3fc 100%)',
+    background: 'linear-gradient(160deg, #fff1f2 0%, #ffe4e6 40%, #faf7f2 100%)',
     borderRadius: '42% 58% 48% 52% / 48% 42% 58% 52%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
     padding: 28,
-    border: '5px solid #fdba74',
-    boxShadow: '0 20px 50px rgba(251, 146, 60, 0.45), 0 8px 20px rgba(251, 146, 60, 0.25)',
+    border: '5px solid #e11d48',
+    boxShadow: '0 20px 50px rgba(225, 29, 72, 0.18)',
   },
   illustration: {
     width: '100%',

@@ -94,13 +94,14 @@ function AuditLogs() {
 
 const styles = {
   header: { marginBottom: 20 },
-  title: { margin: 0, fontSize: 28, color: '#0f172a' },
+  title: { margin: 0, fontSize: 28, color: '#111111' },
   subtitle: { margin: '4px 0 0', color: '#64748b', fontSize: 14 },
   card: {
-    background: '#fff',
-    border: '1px solid #ffedd5',
+    background: '#ffffff',
+    border: '1px solid #ede6dc',
     borderRadius: 16,
     padding: 18,
+    boxShadow: '0 8px 24px rgba(17, 24, 39, 0.04)',
   },
   search: {
     width: '100%',
@@ -108,20 +109,26 @@ const styles = {
     marginBottom: 14,
     padding: '11px 14px',
     borderRadius: 10,
-    border: '1px solid #e2e8f0',
-    background: '#fffdf9',
+    border: '1px solid #ede6dc',
+    background: '#fffdfb',
     outline: 'none',
   },
   table: { width: '100%', borderCollapse: 'collapse', minWidth: 900 },
   th: {
     textAlign: 'left',
     padding: '12px 14px',
-    background: '#fff7ed',
+    background: '#fff1f2',
     fontSize: 12,
-    color: '#c2410c',
-    borderBottom: '1px solid #ffedd5',
+    color: '#be123c',
+    borderBottom: '1px solid #ede6dc',
+    fontWeight: 700,
   },
-  td: { padding: '12px 14px', borderBottom: '1px solid #f8fafc', fontSize: 14 },
+  td: {
+    padding: '12px 14px',
+    borderBottom: '1px solid #f5f0ea',
+    fontSize: 14,
+    color: '#111111',
+  },
 };
 
 export default AuditLogs;

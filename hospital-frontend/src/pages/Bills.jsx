@@ -55,7 +55,66 @@ function Bills() {
     fetchData();
   }, []);
 
-  const totalAmount = selectedItems.reduce((sum, item) => sum + item.price, 0);
+  const totalAmount = selectedItems.reduce((sum, item) => sum + Number(item.price || 0), 0);
+
+  const getBillLabel = (description) => {
+    if (!description) return '-';
+    try {
+      const parsed = JSON.parse(description);
+      if (Array.isArray(parsed)) {
+        return parsed.map((i) => i.name).join(' + ');
+      }
+    } catch {
+      // old plain text bills
+    }
+    return description;
+  };
+
+  const parseBillItems = (bill) => {
+    // New format: JSON array
+    try {
+      const parsed = JSON.parse(bill.description || '');
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((item, idx) => ({
+          id: item.id || `item-${idx}`,
+          name: item.name,
+          price: Number(item.price) || 0,
+        }));
+      }
+    } catch {
+      // continue to legacy parse
+    }
+
+    // Old format: "Service A + Service B"
+    const names = (bill.description || '')
+      .split(' + ')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (names.length === 0) {
+      return [
+        {
+          id: `existing-${bill.id}`,
+          name: 'Existing Bill',
+          price: Number(bill.amount) || 0,
+        },
+      ];
+    }
+
+    return names.map((name, idx) => {
+      const fixed = fixedServices.find((s) => s.name === name);
+      if (fixed) return { ...fixed };
+
+      const lab = labTests.find((t) => t.name === name);
+      if (lab) return { id: lab.id, name: lab.name, price: Number(lab.price) || 0 };
+
+      return {
+        id: `legacy-${bill.id}-${idx}`,
+        name,
+        price: names.length === 1 ? Number(bill.amount) || 0 : 0,
+      };
+    });
+  };
 
   const resetForm = () => {
     setForm({
@@ -74,10 +133,12 @@ function Bills() {
     if (!form.serviceType) return;
     const service = fixedServices.find((s) => s.id === form.serviceType);
     if (!service) return;
+
     if (selectedItems.find((i) => i.id === service.id)) {
       setError('This service is already added');
       return;
     }
+
     setSelectedItems([...selectedItems, service]);
     setForm({ ...form, serviceType: '' });
     setError('');
@@ -87,11 +148,16 @@ function Bills() {
     if (!form.labTestId) return;
     const test = labTests.find((t) => t.id === form.labTestId);
     if (!test) return;
+
     if (selectedItems.find((i) => i.id === test.id)) {
       setError('This lab test is already added');
       return;
     }
-    setSelectedItems([...selectedItems, { id: test.id, name: test.name, price: test.price }]);
+
+    setSelectedItems([
+      ...selectedItems,
+      { id: test.id, name: test.name, price: Number(test.price) || 0 },
+    ]);
     setForm({ ...form, labTestId: '' });
     setError('');
   };
@@ -101,6 +167,7 @@ function Bills() {
       setError('Enter a valid custom amount');
       return;
     }
+
     setSelectedItems([
       ...selectedItems,
       {
@@ -131,7 +198,14 @@ function Bills() {
       return;
     }
 
-    const description = selectedItems.map((i) => i.name).join(' + ');
+    // Save structured items so edit can rebuild each line
+    const description = JSON.stringify(
+      selectedItems.map((i) => ({
+        id: i.id,
+        name: i.name,
+        price: Number(i.price) || 0,
+      }))
+    );
 
     try {
       if (editingId) {
@@ -163,13 +237,7 @@ function Bills() {
       customDescription: '',
       customAmount: '',
     });
-    setSelectedItems([
-      {
-        id: 'existing',
-        name: bill.description || 'Existing Bill',
-        price: bill.amount,
-      },
-    ]);
+    setSelectedItems(parseBillItems(bill));
     setEditingId(bill.id);
     setShowForm(true);
     setError('');
@@ -215,9 +283,10 @@ function Bills() {
 
   const filteredBills = bills.filter((b) => {
     const q = search.toLowerCase();
+    const label = getBillLabel(b.description).toLowerCase();
     return (
       b.patient?.name?.toLowerCase().includes(q) ||
-      b.description?.toLowerCase().includes(q) ||
+      label.includes(q) ||
       b.status?.toLowerCase().includes(q) ||
       String(b.amount).includes(q)
     );
@@ -278,7 +347,9 @@ function Bills() {
                 </option>
               ))}
             </select>
-            <button type="button" onClick={addFixedService} style={styles.addBtn}>Add</button>
+            <button type="button" onClick={addFixedService} style={styles.addBtn}>
+              Add
+            </button>
           </div>
 
           <div style={styles.addRow}>
@@ -294,7 +365,9 @@ function Bills() {
                 </option>
               ))}
             </select>
-            <button type="button" onClick={addLabTest} style={styles.addBtn}>Add</button>
+            <button type="button" onClick={addLabTest} style={styles.addBtn}>
+              Add
+            </button>
           </div>
 
           <div style={styles.addRow}>
@@ -311,7 +384,9 @@ function Bills() {
               onChange={(e) => setForm({ ...form, customDescription: e.target.value })}
               style={styles.input}
             />
-            <button type="button" onClick={addCustom} style={styles.addBtn}>Add</button>
+            <button type="button" onClick={addCustom} style={styles.addBtn}>
+              Add
+            </button>
           </div>
 
           {selectedItems.length > 0 && (
@@ -321,8 +396,12 @@ function Bills() {
                 <div key={item.id} style={styles.selectedItem}>
                   <span>{item.name}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <strong>Rs. {item.price.toLocaleString()}</strong>
-                    <button type="button" onClick={() => removeItem(item.id)} style={styles.removeBtn}>
+                    <strong>Rs. {Number(item.price || 0).toLocaleString()}</strong>
+                    <button
+                      type="button"
+                      onClick={() => removeItem(item.id)}
+                      style={styles.removeBtn}
+                    >
                       Remove
                     </button>
                   </div>
@@ -330,7 +409,7 @@ function Bills() {
               ))}
               <div style={styles.totalLine}>
                 <strong>Total</strong>
-                <strong style={{ color: '#ea580c', fontSize: 18 }}>
+                <strong style={{ color: '#e11d48', fontSize: 18 }}>
                   Rs. {totalAmount.toLocaleString()}
                 </strong>
               </div>
@@ -338,7 +417,9 @@ function Bills() {
           )}
 
           <button type="submit" style={{ ...styles.primaryBtn, marginTop: 14 }}>
-            {editingId ? 'Update Bill' : `Create Bill (Rs. ${totalAmount.toLocaleString()})`}
+            {editingId
+              ? `Update Bill (Rs. ${totalAmount.toLocaleString()})`
+              : `Create Bill (Rs. ${totalAmount.toLocaleString()})`}
           </button>
         </form>
       )}
@@ -366,8 +447,12 @@ function Bills() {
             </select>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <button type="submit" style={styles.primaryBtn}>Save Payment</button>
-            <button type="button" onClick={() => setShowPayment(null)} style={styles.cancelBtn}>Cancel</button>
+            <button type="submit" style={styles.primaryBtn}>
+              Save Payment
+            </button>
+            <button type="button" onClick={() => setShowPayment(null)} style={styles.cancelBtn}>
+              Cancel
+            </button>
           </div>
         </form>
       )}
@@ -409,15 +494,17 @@ function Bills() {
                     return (
                       <tr key={b.id}>
                         <td style={styles.td}>{b.patient?.name}</td>
-                        <td style={styles.td}>{b.description || '-'}</td>
-                        <td style={styles.td}>Rs. {b.amount.toLocaleString()}</td>
+                        <td style={styles.td}>{getBillLabel(b.description)}</td>
+                        <td style={styles.td}>Rs. {Number(b.amount || 0).toLocaleString()}</td>
                         <td style={styles.td}>
-                          <span style={{
-                            ...styles.pill,
-                            background: s.bg,
-                            color: s.color,
-                            border: `1px solid ${s.border}`,
-                          }}>
+                          <span
+                            style={{
+                              ...styles.pill,
+                              background: s.bg,
+                              color: s.color,
+                              border: `1px solid ${s.border}`,
+                            }}
+                          >
                             {b.status}
                           </span>
                         </td>
@@ -435,8 +522,12 @@ function Bills() {
                                 Pay
                               </button>
                             )}
-                            <button onClick={() => handleEdit(b)} style={styles.editBtn}>Edit</button>
-                            <button onClick={() => setDeleteId(b.id)} style={styles.deleteBtn}>Delete</button>
+                            <button onClick={() => handleEdit(b)} style={styles.editBtn}>
+                              Edit
+                            </button>
+                            <button onClick={() => setDeleteId(b.id)} style={styles.deleteBtn}>
+                              Delete
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -455,8 +546,12 @@ function Bills() {
             <h3 style={{ marginTop: 0 }}>Confirm Delete</h3>
             <p style={{ color: '#64748b' }}>Are you sure you want to delete this bill?</p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
-              <button onClick={() => setDeleteId(null)} style={styles.cancelBtn}>Cancel</button>
-              <button onClick={confirmDelete} style={styles.deleteBtn}>Yes, Delete</button>
+              <button onClick={() => setDeleteId(null)} style={styles.cancelBtn}>
+                Cancel
+              </button>
+              <button onClick={confirmDelete} style={styles.deleteBtn}>
+                Yes, Delete
+              </button>
             </div>
           </div>
         </div>
@@ -467,10 +562,10 @@ function Bills() {
 
 const styles = {
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  title: { margin: 0, fontSize: 28, color: '#0f172a' },
+  title: { margin: 0, fontSize: 28, color: '#111111' },
   subtitle: { margin: '4px 0 0', color: '#64748b', fontSize: 14 },
   primaryBtn: {
-    background: 'linear-gradient(135deg, #f59e0b, #fb923c)',
+    background: '#e11d48',
     color: 'white',
     border: 'none',
     padding: '10px 16px',
@@ -478,10 +573,10 @@ const styles = {
     cursor: 'pointer',
     fontSize: 14,
     fontWeight: 600,
-    boxShadow: '0 8px 18px rgba(245,158,11,0.25)',
+    boxShadow: '0 8px 18px rgba(225, 29, 72, 0.22)',
   },
   addBtn: {
-    background: 'linear-gradient(135deg, #12b886, #0ca678)',
+    background: '#111111',
     color: 'white',
     border: 'none',
     padding: '10px 14px',
@@ -492,9 +587,9 @@ const styles = {
     whiteSpace: 'nowrap',
   },
   editBtn: {
-    background: '#ecfdf5',
-    color: '#0f766e',
-    border: '1px solid #a7f3d0',
+    background: '#eff6ff',
+    color: '#2563eb',
+    border: '1px solid #bfdbfe',
     padding: '6px 10px',
     borderRadius: 8,
     cursor: 'pointer',
@@ -522,9 +617,9 @@ const styles = {
     fontWeight: 600,
   },
   cancelBtn: {
-    background: '#f8fafc',
+    background: '#faf7f2',
     color: '#334155',
-    border: '1px solid #e2e8f0',
+    border: '1px solid #ede6dc',
     padding: '8px 14px',
     borderRadius: 8,
     cursor: 'pointer',
@@ -541,21 +636,21 @@ const styles = {
   },
   card: {
     background: '#ffffff',
-    border: '1px solid #ffedd5',
+    border: '1px solid #ede6dc',
     borderRadius: 16,
     padding: 18,
     marginBottom: 18,
-    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.04)',
+    boxShadow: '0 8px 24px rgba(17, 24, 39, 0.04)',
   },
-  cardTitle: { marginTop: 0, marginBottom: 14, color: '#0f172a' },
+  cardTitle: { marginTop: 0, marginBottom: 14, color: '#111111' },
   formGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 },
   addRow: { display: 'flex', gap: 10, marginBottom: 12, alignItems: 'center' },
   input: {
     padding: '11px 12px',
-    border: '1px solid #e2e8f0',
+    border: '1px solid #ede6dc',
     borderRadius: 10,
     fontSize: 14,
-    background: '#fffdf9',
+    background: '#fffdfb',
     outline: 'none',
     width: '100%',
     boxSizing: 'border-box',
@@ -566,13 +661,13 @@ const styles = {
     marginBottom: 14,
     padding: '11px 14px',
     borderRadius: 10,
-    border: '1px solid #e2e8f0',
-    background: '#fffdf9',
+    border: '1px solid #ede6dc',
+    background: '#fffdfb',
     outline: 'none',
   },
   selectedBox: {
-    background: '#fff7ed',
-    border: '1px solid #ffedd5',
+    background: '#fff1f2',
+    border: '1px solid #ede6dc',
     borderRadius: 12,
     padding: 14,
     marginTop: 8,
@@ -582,7 +677,7 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '8px 0',
-    borderBottom: '1px solid #ffedd5',
+    borderBottom: '1px solid #ede6dc',
   },
   totalLine: {
     display: 'flex',
@@ -594,20 +689,39 @@ const styles = {
   th: {
     textAlign: 'left',
     padding: '12px 14px',
-    background: '#fff7ed',
+    background: '#fff1f2',
     fontSize: 12,
-    color: '#c2410c',
-    borderBottom: '1px solid #ffedd5',
+    color: '#be123c',
+    borderBottom: '1px solid #ede6dc',
     fontWeight: 700,
   },
-  td: { padding: '12px 14px', borderBottom: '1px solid #f8fafc', fontSize: 14, color: '#0f172a' },
+  td: {
+    padding: '12px 14px',
+    borderBottom: '1px solid #f5f0ea',
+    fontSize: 14,
+    color: '#111111',
+  },
   pill: { padding: '4px 8px', borderRadius: 999, fontSize: 12, fontWeight: 600 },
-  error: { background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3', padding: 12, borderRadius: 10, marginBottom: 14 },
-  success: { background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', padding: 12, borderRadius: 10, marginBottom: 14 },
+  error: {
+    background: '#fff1f2',
+    color: '#e11d48',
+    border: '1px solid #fecdd3',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 14,
+  },
+  success: {
+    background: '#ecfdf5',
+    color: '#047857',
+    border: '1px solid #a7f3d0',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 14,
+  },
   overlay: {
     position: 'fixed',
     inset: 0,
-    background: 'rgba(15, 23, 42, 0.45)',
+    background: 'rgba(17, 24, 39, 0.45)',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',

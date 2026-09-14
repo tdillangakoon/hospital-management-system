@@ -27,11 +27,10 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
   };
 
-  // Auto logout after 30 minutes of inactivity
   useEffect(() => {
     if (!token) return;
 
-    const TIMEOUT = 30 * 60 * 1000; // 30 minutes
+    const TIMEOUT = 30 * 60 * 1000; 
     let timer;
 
     const startTimer = () => {
