@@ -2,7 +2,6 @@ const cron = require('node-cron');
 const { createBackup } = require('../utils/backup');
 
 function startBackupJobs() {
-  // Daily backup at 2:00 AM
   cron.schedule('0 2 * * *', async () => {
     try {
       const backup = await createBackup('daily');
